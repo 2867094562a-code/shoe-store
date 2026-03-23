@@ -150,7 +150,7 @@
     <div id="addModal" class="fixed inset-0 z-[500] bg-slate-900/60 backdrop-blur-md items-center justify-center p-8 hidden">
         <div class="bg-white w-full max-w-2xl rounded-[4rem] p-12 shadow-2xl space-y-10 border border-white page-enter">
             <div class="flex justify-between items-start">
-                <div><h3 class="text-4xl font-black tracking-tighter mb-2">记录销售订单</h3><p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Transaction Entry</p></div>
+                <div><h3 id="modalTitle" class="text-4xl font-black tracking-tighter mb-2">记录销售订单</h3><p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Transaction Entry</p></div>
                 <button onclick="closeModal()" class="w-14 h-14 bg-slate-100 text-slate-400 rounded-3xl flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 transition-all">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                 </button>
@@ -190,11 +190,17 @@
                         <input id="f-cost" type="number" placeholder="0.00" class="w-full bg-slate-50 px-8 py-5 rounded-3xl border-none focus:ring-4 focus:ring-indigo-500/10 font-black text-2xl text-slate-400">
                     </div>
                 </div>
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">备注信息</label>
-                    <input id="f-remark" type="text" placeholder="例如：加急、送袜子、瑕疵说明..." class="w-full bg-slate-50 px-8 py-5 rounded-3xl border-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-lg">
+                <div class="grid grid-cols-2 gap-8">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">快递单号</label>
+                        <input id="f-tracking" type="text" placeholder="暂无单号" class="w-full bg-slate-50 px-8 py-5 rounded-3xl border-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-lg text-indigo-600">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">备注信息</label>
+                        <input id="f-remark" type="text" placeholder="例如：加急、送袜..." class="w-full bg-slate-50 px-8 py-5 rounded-3xl border-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-lg">
+                    </div>
                 </div>
-                <button onclick="saveOrder()" class="w-full bg-indigo-600 py-6 text-white font-black text-xl rounded-[2rem] shadow-2xl shadow-indigo-100 flex items-center justify-center space-x-4 active:scale-95">
+                <button onclick="saveOrder()" class="w-full bg-indigo-600 py-6 text-white font-black text-xl rounded-[2rem] shadow-2xl shadow-indigo-100 flex items-center justify-center space-x-4 active:scale-95 transition-all">
                     <span>确认保存并入库</span>
                 </button>
             </div>
@@ -269,13 +275,14 @@
         let staffList = (savedStaff && savedStaff.length > 0) ? savedStaff : ['老板'];
         
         let orders = JSON.parse(localStorage.getItem('sec_orders')) || [
-            { id: '26032301', date: '2026-03-23', staff: '老板', auditor: '老板', client: '张三', shoe: '空军一号', price: 168, cost: 85, remark: '首单内测送袜', status: '已发货' }
+            { id: '26032301', date: '2026-03-23', staff: '老板', auditor: '老板', client: '张三', shoe: '空军一号', price: 168, cost: 85, tracking: 'SF12345678', remark: '首单内测送袜', status: '已发货' }
         ];
         
         let passwordHash = localStorage.getItem('sec_pwd_hash') || ""; 
         let isUnlocked = (passwordHash === ""); 
         let currentView = 'dashboard';
         let selectedDate = new Date().toISOString().split('T')[0];
+        let editingOrderId = null; // 记录当前正在编辑的订单ID
 
         // --- 系统初始化 ---
         async function init() {
@@ -408,7 +415,7 @@
                     </div>
                     <div class="glass-card rounded-[3.5rem] overflow-hidden">
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm min-w-[1200px]">
+                            <table class="w-full text-left text-sm min-w-[1300px]">
                                 <thead class="bg-slate-50/50 text-slate-400 font-black uppercase tracking-widest text-[10px] border-b border-slate-100">
                                     <tr>
                                         <th class="px-8 py-7">单号</th>
@@ -419,6 +426,7 @@
                                         <th class="px-8 py-7 text-right">成交价</th>
                                         <th class="px-8 py-7 text-right">成本</th>
                                         <th class="px-8 py-7 text-right text-emerald-500">利润</th>
+                                        <th class="px-8 py-7">快递单号</th>
                                         <th class="px-8 py-7">备注</th>
                                         <th class="px-8 py-7 text-center">操作</th>
                                     </tr>
@@ -434,11 +442,17 @@
                                             <td class="px-8 py-6 text-right text-indigo-600">¥ ${o.price}</td>
                                             <td class="px-8 py-6 text-right text-slate-300">¥ ${o.cost}</td>
                                             <td class="px-8 py-6 text-right text-emerald-600">¥ ${o.price - o.cost}</td>
+                                            <td class="px-8 py-6 text-indigo-500 text-xs font-mono">${o.tracking || '-'}</td>
                                             <td class="px-8 py-6 text-slate-400 text-[10px] max-w-[150px] truncate" title="${o.remark || ''}">${o.remark || '-'}</td>
-                                            <td class="px-8 py-6 text-center"><button onclick="deleteOrder('${o.id}')" class="text-rose-400 p-2 hover:bg-rose-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all">删除</button></td>
+                                            <td class="px-8 py-6 text-center">
+                                                <div class="flex items-center justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                    <button onclick="editOrder('${o.id}')" class="text-indigo-400 p-2 hover:bg-indigo-50 rounded-2xl transition-all">修改</button>
+                                                    <button onclick="deleteOrder('${o.id}')" class="text-rose-400 p-2 hover:bg-rose-50 rounded-2xl transition-all">删除</button>
+                                                </div>
+                                            </td>
                                         </tr>
                                     `).join('')}
-                                    ${filtered.length === 0 ? '<tr><td colspan="10" class="py-24 text-center text-slate-400 font-black tracking-widest uppercase">No Data Records</td></tr>' : ''}
+                                    ${filtered.length === 0 ? '<tr><td colspan="11" class="py-24 text-center text-slate-400 font-black tracking-widest uppercase">No Data Records</td></tr>' : ''}
                                 </tbody>
                                 ${filtered.length > 0 ? `
                                 <tfoot class="bg-slate-50/80 font-black text-slate-900 border-t border-slate-200">
@@ -447,7 +461,7 @@
                                         <td class="px-8 py-6 text-right text-xl tracking-tighter">¥ ${filtered.reduce((s,o) => s + Number(o.price), 0).toLocaleString()}</td>
                                         <td class="px-8 py-6 text-right text-sm text-slate-400">¥ ${filtered.reduce((s,o) => s + Number(o.cost), 0).toLocaleString()}</td>
                                         <td class="px-8 py-6 text-right text-xl tracking-tighter text-emerald-600">¥ ${filtered.reduce((s,o) => s + (Number(o.price) - Number(o.cost)), 0).toLocaleString()}</td>
-                                        <td colspan="2"></td>
+                                        <td colspan="3"></td>
                                     </tr>
                                 </tfoot>
                                 ` : ''}
@@ -574,17 +588,53 @@
         function updateSelectedDate(val) { selectedDate = val; render(); }
         function gotoDate(val) { selectedDate = val; switchView('orders'); }
         
-        function showModal() { 
+        function showModal(orderId = null) { 
             const staffOptions = staffList.map(s => `<option value="${s}">${s}</option>`).join('');
             document.getElementById('f-staff').innerHTML = staffOptions;
             document.getElementById('f-auditor').innerHTML = `<option value="">无需对账员</option>` + staffOptions;
             
+            editingOrderId = orderId; // 记录状态
+            const titleEl = document.getElementById('modalTitle');
+
+            if (orderId) {
+                // 编辑模式：回填数据
+                titleEl.innerText = "修改销售订单";
+                const order = orders.find(o => o.id === orderId);
+                if (order) {
+                    document.getElementById('f-staff').value = order.staff || staffList[0];
+                    document.getElementById('f-auditor').value = order.auditor || "";
+                    document.getElementById('f-shoe').value = order.shoe || "";
+                    document.getElementById('f-client').value = order.client || "";
+                    document.getElementById('f-price').value = order.price || "";
+                    document.getElementById('f-cost').value = order.cost || "";
+                    document.getElementById('f-tracking').value = order.tracking || "";
+                    document.getElementById('f-remark').value = order.remark || "";
+                }
+            } else {
+                // 新增模式：清空数据
+                titleEl.innerText = "记录销售订单";
+                document.getElementById('f-staff').value = staffList[0] || "";
+                document.getElementById('f-auditor').value = "";
+                document.getElementById('f-shoe').value = "";
+                document.getElementById('f-client').value = "";
+                document.getElementById('f-price').value = "";
+                document.getElementById('f-cost').value = "";
+                document.getElementById('f-tracking').value = "";
+                document.getElementById('f-remark').value = "";
+            }
+
             document.getElementById('addModal').classList.remove('hidden'); 
             document.getElementById('addModal').classList.add('flex'); 
         }
+        
         function closeModal() { 
             document.getElementById('addModal').classList.add('hidden'); 
             document.getElementById('addModal').classList.remove('flex'); 
+            editingOrderId = null; // 确保关闭时清空状态
+        }
+
+        function editOrder(id) {
+            showModal(id);
         }
 
         // 员工管理控制
@@ -637,33 +687,69 @@
             }
         }
 
+        // 自动生成日期流水号 (例如 26032301)
+        function generateOrderId(dateStr) {
+            const parts = dateStr.split('-'); // 形如 ['2026', '03', '23']
+            const prefix = parts[0].slice(2) + parts[1] + parts[2]; // 拼接成 260323
+            
+            const todayOrders = orders.filter(o => o.date === dateStr);
+            if (todayOrders.length === 0) return prefix + '01'; // 当天第一单
+            
+            let maxSeq = 0;
+            todayOrders.forEach(o => {
+                if (o.id && o.id.startsWith(prefix)) {
+                    const seqStr = o.id.slice(6); // 提取尾部序号
+                    const seq = parseInt(seqStr, 10);
+                    if (!isNaN(seq) && seq > maxSeq) {
+                        maxSeq = seq;
+                    }
+                }
+            });
+            const nextSeq = maxSeq + 1;
+            return prefix + nextSeq.toString().padStart(2, '0'); // 不足两位补0
+        }
+
         function saveOrder() {
             const shoe = document.getElementById('f-shoe').value;
             const price = document.getElementById('f-price').value;
             const cost = document.getElementById('f-cost').value;
             if(!shoe || !price || !cost) { showToast("⚠️ 请填写完整的款式和价格信息"); return; }
             
-            orders.unshift({
-                id: Date.now().toString().slice(-8), 
-                date: selectedDate, 
-                staff: document.getElementById('f-staff').value,
-                auditor: document.getElementById('f-auditor').value,
-                shoe: shoe, 
-                client: document.getElementById('f-client').value, 
-                remark: document.getElementById('f-remark').value,
-                price: Number(price), 
-                cost: Number(cost)
-            });
+            if (editingOrderId) {
+                // ====== 执行修改逻辑 ======
+                const index = orders.findIndex(o => o.id === editingOrderId);
+                if (index !== -1) {
+                    orders[index].staff = document.getElementById('f-staff').value;
+                    orders[index].auditor = document.getElementById('f-auditor').value;
+                    orders[index].shoe = shoe;
+                    orders[index].client = document.getElementById('f-client').value;
+                    orders[index].tracking = document.getElementById('f-tracking').value;
+                    orders[index].remark = document.getElementById('f-remark').value;
+                    orders[index].price = Number(price);
+                    orders[index].cost = Number(cost);
+                    showToast("✏️ 订单修改已安全保存");
+                }
+            } else {
+                // ====== 执行新增逻辑 ======
+                const newId = generateOrderId(selectedDate);
+                orders.unshift({
+                    id: newId, 
+                    date: selectedDate, 
+                    staff: document.getElementById('f-staff').value,
+                    auditor: document.getElementById('f-auditor').value,
+                    shoe: shoe, 
+                    client: document.getElementById('f-client').value, 
+                    tracking: document.getElementById('f-tracking').value,
+                    remark: document.getElementById('f-remark').value,
+                    price: Number(price), 
+                    cost: Number(cost)
+                });
+                showToast("📦 新订单已成功入库");
+            }
+            
             localStorage.setItem('sec_orders', JSON.stringify(orders));
             closeModal(); 
             render();
-            
-            document.getElementById('f-shoe').value = ""; 
-            document.getElementById('f-price').value = ""; 
-            document.getElementById('f-cost').value = "";
-            document.getElementById('f-client').value = "";
-            document.getElementById('f-remark').value = "";
-            showToast("📦 订单已成功保存并入库");
         }
 
         function deleteOrder(id) {
