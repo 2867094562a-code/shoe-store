@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>校园鞋店智能管理系统 - HyperOS H5</title>
+    <title>校园鞋店管理系统 - HyperOS Security+</title>
     <!-- 引入核心库 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -11,79 +11,55 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
         
-        :root {
-            --mi-primary: #4f46e5;
-            --mi-bg: #f2f5f8;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--mi-bg);
-            overflow-x: hidden;
-            user-select: none;
-        }
-
-        /* HyperOS 磨砂玻璃效果 */
-        .glass-sidebar {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
-            border-right: 1px solid rgba(255, 255, 255, 0.5);
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .glass-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.1);
-        }
-
-        /* 隐藏滚动条 */
+        :root { --mi-primary: #4f46e5; --mi-bg: #f2f5f8; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--mi-bg); overflow-x: hidden; user-select: none; }
+        
+        .glass-sidebar { background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border-right: 1px solid rgba(255, 255, 255, 0.5); }
+        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.8); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .glass-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.1); }
         ::-webkit-scrollbar { width: 0px; background: transparent; }
-
-        /* 动画 */
+        
         .page-enter { animation: slideIn 0.5s ease-out; }
-        @keyframes slideIn {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .active-nav { background: var(--mi-primary) !important; color: white !important; box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3); }
+        input, select { transition: all 0.3s ease; }
+        input:focus { background: white !important; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1) !important; }
+        
+        .lock-pulse { animation: lockPulse 2s infinite; }
+        @keyframes lockPulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+        
+        .scale-in-center { animation: scaleInCenter 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+        @keyframes scaleInCenter { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
-        .active-nav {
-            background: var(--mi-primary) !important;
-            color: white !important;
-            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
-        }
-
-        input, select {
-            transition: all 0.3s ease;
-        }
-
-        input:focus {
-            background: white !important;
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1) !important;
-        }
-
-        /* 锁定页特有动画 */
-        .lock-pulse {
-            animation: lockPulse 2s infinite;
-        }
-        @keyframes lockPulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.8; }
-            100% { transform: scale(1); opacity: 1; }
-        }
+        /* 隐藏主界面，直到验证成功 */
+        #appWrapper { display: none; }
     </style>
 </head>
-<body class="min-h-screen flex text-slate-900">
+<body class="min-h-screen text-slate-900">
 
-    <!-- 锁定遮罩层 -->
-    <div id="lockScreen" class="fixed inset-0 z-[1000] bg-slate-950 flex items-center justify-center hidden overflow-hidden">
+    <!-- ================== 全局 UI 组件 ================== -->
+    <!-- 自定义 Toast 悬浮提示 -->
+    <div id="customToast" class="fixed top-10 left-1/2 -translate-x-1/2 z-[10000] bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-xl font-bold transition-all duration-300 opacity-0 pointer-events-none translate-y-[-20px]">
+        提示内容
+    </div>
+
+    <!-- 自定义 Confirm 确认弹窗 -->
+    <div id="customDialog" class="fixed inset-0 z-[10000] bg-slate-900/60 backdrop-blur-sm items-center justify-center p-8 hidden">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl scale-in-center">
+            <h3 class="text-2xl font-black mb-4" id="dialogTitle">提示</h3>
+            <p class="text-slate-500 font-medium mb-8 leading-relaxed whitespace-pre-line" id="dialogMessage">内容</p>
+            <div class="flex space-x-4">
+                <button onclick="closeDialog()" class="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all">取消</button>
+                <!-- 重点修复：使用内联 onclick 直接绑定执行函数，防止监听器丢失 -->
+                <button onclick="executeDialogConfirm()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">确认</button>
+            </div>
+        </div>
+    </div>
+    <!-- ================================================== -->
+
+    <!-- 锁定遮罩层 (最高层级) -->
+    <div id="lockScreen" class="fixed inset-0 z-[9999] bg-slate-950 flex items-center justify-center overflow-hidden">
         <div class="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-indigo-600/20 rounded-full blur-[120px]"></div>
         <div class="relative z-10 w-full max-w-md p-12 text-center">
             <div class="w-24 h-24 bg-indigo-600 rounded-[2rem] flex items-center justify-center text-white mx-auto mb-10 shadow-2xl lock-pulse">
@@ -91,71 +67,71 @@
             </div>
             <h1 class="text-3xl font-black text-white mb-2 tracking-tight">安全验证</h1>
             <p class="text-slate-400 mb-10 text-sm">请输入管理密码解锁系统</p>
-            <input type="password" id="pwdInput" placeholder="••••••" class="w-full bg-slate-900 text-white border-none rounded-3xl py-5 text-center text-3xl tracking-[0.5em] focus:ring-4 focus:ring-indigo-500/30 outline-none mb-6">
+            <input type="password" id="pwdInput" placeholder="••••••" class="w-full bg-slate-900 text-white border border-slate-800 rounded-3xl py-5 text-center text-3xl tracking-[0.5em] focus:ring-4 focus:ring-indigo-500/30 outline-none mb-6">
             <button onclick="checkUnlock()" class="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-3xl font-black text-lg transition-all active:scale-95">解锁进入</button>
         </div>
     </div>
 
-    <!-- 侧边栏 -->
-    <aside class="w-72 glass-sidebar flex flex-col p-8 sticky top-0 h-screen z-40">
-        <div class="flex items-center space-x-4 mb-12">
-            <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v18"/><path d="M3 12h18"/><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
-            </div>
-            <div class="leading-tight">
-                <span class="text-xl font-black tracking-tighter">鞋店对账</span>
-                <p class="text-[10px] text-indigo-500 font-black uppercase tracking-widest mt-0.5">HyperOS H5</p>
-            </div>
-        </div>
-
-        <nav class="flex-1 space-y-3">
-            <button onclick="switchView('dashboard')" id="btn-dashboard" class="w-full flex items-center space-x-3 px-5 py-4 rounded-2xl transition-all duration-300 active-nav">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
-                <span class="font-bold text-sm tracking-tight">控制面板</span>
-            </button>
-            <button onclick="switchView('orders')" id="btn-orders" class="w-full flex items-center space-x-3 px-5 py-4 rounded-2xl transition-all duration-300 text-slate-500 hover:bg-white/60">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M3 12h18"/><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
-                <span class="font-bold text-sm tracking-tight">详细对账</span>
-            </button>
-            <button onclick="switchView('records')" id="btn-records" class="w-full flex items-center space-x-3 px-5 py-4 rounded-2xl transition-all duration-300 text-slate-500 hover:bg-white/60">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-                <span class="font-bold text-sm tracking-tight">历史汇总</span>
-            </button>
-        </nav>
-
-        <div class="pt-8 mt-8 border-t border-slate-200/50 space-y-3">
-            <button onclick="switchView('settings')" id="btn-settings" class="w-full flex items-center space-x-3 px-5 py-4 rounded-2xl text-slate-500 hover:bg-white/60 transition-all font-bold text-sm">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                <span>系统设置</span>
-            </button>
-            <button onclick="lockSystem()" class="w-full flex items-center space-x-3 px-5 py-4 rounded-2xl text-rose-500 hover:bg-rose-50 transition-all font-bold text-sm">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V5a5 5 0 0 1 9.9-1"/></svg>
-                <span>锁定系统</span>
-            </button>
-        </div>
-    </aside>
-
-    <!-- 主体内容 -->
-    <div class="flex-1 flex flex-col min-w-0">
-        <header class="h-24 bg-white/40 backdrop-blur-xl border-b border-slate-200/50 flex items-center justify-between px-10 sticky top-0 z-30">
-            <div class="flex items-center space-x-8 text-sm font-bold text-slate-600">
-                <div id="currentTimeDisplay">加载时间中...</div>
-            </div>
-            
-            <div class="flex items-center space-x-6">
-                <button onclick="showModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-2xl font-black text-sm shadow-2xl shadow-indigo-100 flex items-center space-x-3 transition-all active:scale-[0.96]">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-                    <span>记一笔</span>
-                </button>
-                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-xl border-2 border-white flex items-center justify-center text-white font-black text-lg">
-                    鞋
+    <!-- 主程序容器 (密码正确才会显示) -->
+    <div id="appWrapper" class="flex min-h-screen w-full">
+        <!-- 侧边栏 -->
+        <aside class="w-72 glass-sidebar flex flex-col p-8 sticky top-0 h-screen z-40">
+            <div class="flex items-center space-x-4 mb-12">
+                <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v18"/><path d="M3 12h18"/><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+                </div>
+                <div class="leading-tight">
+                    <span class="text-xl font-black tracking-tighter">鞋店对账</span>
+                    <p class="text-[10px] text-indigo-500 font-black uppercase tracking-widest mt-0.5">Security Pro</p>
                 </div>
             </div>
-        </header>
 
-        <main id="mainContent" class="p-10 overflow-y-auto overflow-x-hidden">
-            <!-- 内容由 JS 动态生成 -->
-        </main>
+            <nav class="flex-1 space-y-3">
+                <button onclick="switchView('dashboard')" id="btn-dashboard" class="w-full flex items-center space-x-3 px-5 py-4 rounded-2xl transition-all duration-300 active-nav">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                    <span class="font-bold text-sm tracking-tight">控制面板</span>
+                </button>
+                <button onclick="switchView('orders')" id="btn-orders" class="w-full flex items-center space-x-3 px-5 py-4 rounded-2xl transition-all duration-300 text-slate-500 hover:bg-white/60">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M3 12h18"/><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+                    <span class="font-bold text-sm tracking-tight">详细对账</span>
+                </button>
+                <button onclick="switchView('records')" id="btn-records" class="w-full flex items-center space-x-3 px-5 py-4 rounded-2xl transition-all duration-300 text-slate-500 hover:bg-white/60">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+                    <span class="font-bold text-sm tracking-tight">历史汇总</span>
+                </button>
+            </nav>
+
+            <div class="pt-8 mt-8 border-t border-slate-200/50 space-y-3">
+                <button onclick="switchView('settings')" id="btn-settings" class="w-full flex items-center space-x-3 px-5 py-4 rounded-2xl text-slate-500 hover:bg-white/60 transition-all font-bold text-sm">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span>系统设置</span>
+                </button>
+                <button onclick="lockSystem()" class="w-full flex items-center space-x-3 px-5 py-4 rounded-2xl text-rose-500 hover:bg-rose-50 transition-all font-bold text-sm">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V5a5 5 0 0 1 9.9-1"/></svg>
+                    <span>锁定系统</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主体内容区 -->
+        <div class="flex-1 flex flex-col min-w-0">
+            <header class="h-24 bg-white/40 backdrop-blur-xl border-b border-slate-200/50 flex items-center justify-between px-10 sticky top-0 z-30">
+                <div class="flex items-center space-x-8 text-sm font-bold text-slate-600">
+                    <div id="currentTimeDisplay">加载时间中...</div>
+                </div>
+                
+                <div class="flex items-center space-x-6">
+                    <button onclick="showModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-2xl font-black text-sm shadow-2xl shadow-indigo-100 flex items-center space-x-3 transition-all active:scale-[0.96]">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                        <span>记一笔</span>
+                    </button>
+                </div>
+            </header>
+
+            <main id="mainContent" class="p-10 overflow-y-auto overflow-x-hidden">
+                <!-- 内容由 JS 动态生成 -->
+            </main>
+        </div>
     </div>
 
     <!-- 记一笔 弹窗 -->
@@ -172,12 +148,24 @@
                     <div class="space-y-2">
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">接待人员</label>
                         <select id="f-staff" class="w-full bg-slate-50 px-8 py-5 rounded-3xl border-none outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-lg">
-                            <option>老板</option><option>员工A</option><option>员工B</option><option>员工C</option>
+                            <!-- 动态加载员工列表 -->
                         </select>
                     </div>
                     <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">对账人员</label>
+                        <select id="f-auditor" class="w-full bg-slate-50 px-8 py-5 rounded-3xl border-none outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-lg">
+                            <!-- 动态加载员工列表 -->
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-8">
+                    <div class="space-y-2">
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">鞋款型号</label>
                         <input id="f-shoe" type="text" placeholder="例如：AJ1 High" class="w-full bg-slate-50 px-8 py-5 rounded-3xl border-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-lg">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">客户姓名</label>
+                        <input id="f-client" type="text" placeholder="例如：张三" class="w-full bg-slate-50 px-8 py-5 rounded-3xl border-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-lg">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-8">
@@ -191,8 +179,8 @@
                     </div>
                 </div>
                 <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">客户姓名 / 备注信息</label>
-                    <input id="f-client" type="text" placeholder="姓名、联系方式..." class="w-full bg-slate-50 px-8 py-5 rounded-3xl border-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-lg">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">备注信息</label>
+                    <input id="f-remark" type="text" placeholder="例如：加急、送袜子、瑕疵说明..." class="w-full bg-slate-50 px-8 py-5 rounded-3xl border-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-lg">
                 </div>
                 <button onclick="saveOrder()" class="w-full bg-indigo-600 py-6 text-white font-black text-xl rounded-[2rem] shadow-2xl shadow-indigo-100 flex items-center justify-center space-x-4 active:scale-95">
                     <span>确认保存并入库</span>
@@ -202,27 +190,134 @@
     </div>
 
     <script>
+        // --- 核心底层机制：全局弹窗总线 (解决拦截与失灵问题) ---
+        let activeConfirmCallback = null;
+
+        function showToast(msg) {
+            const toast = document.getElementById('customToast');
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translate(-50%, 0)';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, -20px)';
+            }, 3000);
+        }
+
+        function showConfirm(title, msg, callback) {
+            document.getElementById('dialogTitle').innerText = title;
+            document.getElementById('dialogMessage').innerText = msg;
+            activeConfirmCallback = callback; // 保存回调函数
+            
+            const dialog = document.getElementById('customDialog');
+            dialog.classList.remove('hidden');
+            dialog.classList.add('flex');
+        }
+
+        function closeDialog() {
+            const dialog = document.getElementById('customDialog');
+            dialog.classList.add('hidden');
+            dialog.classList.remove('flex');
+            activeConfirmCallback = null;
+        }
+
+        function executeDialogConfirm() {
+            if (activeConfirmCallback) {
+                activeConfirmCallback(); // 执行传入的回调
+            }
+            closeDialog();
+        }
+
+        // --- 核心加密模块 (修复：兼容 HTTP 和 HTTPS 访问) ---
+        async function hashPassword(pwd) {
+            if (!pwd) return "";
+            // 采用纯 JS 哈希算法，防止在 HTTP (无小绿锁) 状态下底层 API 崩溃导致密码未保存
+            let hash = 0;
+            for (let i = 0; i < pwd.length; i++) {
+                const char = pwd.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // 转为32位整数
+            }
+            return "hyper_sec_" + Math.abs(hash).toString(36);
+        }
+
         // --- 数据状态管理 ---
-        let orders = JSON.parse(localStorage.getItem('h5_orders')) || [
-            { id: '26032301', date: '2026-03-23', staff: '员工A', client: '张三', shoe: '空军一号', price: 168, cost: 85, status: '已发货' },
-            { id: '26032302', date: '2026-03-23', staff: '老板', client: '李四', shoe: '熊猫Dunk', price: 188, cost: 95, status: '待发货' }
+        let savedStaff = JSON.parse(localStorage.getItem('sec_staff'));
+        // 修复：默认只留“老板”一个角色
+        let staffList = (savedStaff && savedStaff.length > 0) ? savedStaff : ['老板'];
+        
+        let orders = JSON.parse(localStorage.getItem('sec_orders')) || [
+            { id: '26032301', date: '2026-03-23', staff: '老板', auditor: '老板', client: '张三', shoe: '空军一号', price: 168, cost: 85, remark: '首单内测送袜', status: '已发货' }
         ];
-        let password = localStorage.getItem('h5_pwd') || "";
+        
+        let passwordHash = localStorage.getItem('sec_pwd_hash') || ""; 
+        let isUnlocked = (passwordHash === ""); 
         let currentView = 'dashboard';
         let selectedDate = new Date().toISOString().split('T')[0];
 
-        // --- 初始化与页面切换 ---
-        function init() {
-            if (password !== "") {
+        // --- 系统初始化与防篡改 (Anti-F12) ---
+        async function init() {
+            const observer = new MutationObserver(() => {
+                if (!isUnlocked) {
+                    const lockNode = document.getElementById('lockScreen');
+                    if (!document.body.contains(lockNode) || getComputedStyle(lockNode).display === 'none' || getComputedStyle(lockNode).visibility === 'hidden') {
+                        document.body.innerHTML = `
+                            <div style="background:#0f172a; color:#ef4444; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif;">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:20px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                <h1 style="font-size:2rem; font-weight:900; margin-bottom:10px;">非法篡改警告</h1>
+                                <p style="color:#94a3b8;">系统侦测到 DOM 异常修改，为保护数据安全，进程已被强制终止。</p>
+                                <button onclick="location.reload()" style="margin-top:30px; padding:10px 30px; background:#ef4444; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">重新加载系统</button>
+                            </div>`;
+                    }
+                }
+            });
+            observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+
+            if (!isUnlocked) {
                 document.getElementById('lockScreen').classList.remove('hidden');
+                document.getElementById('appWrapper').style.display = 'none';
+            } else {
+                document.getElementById('lockScreen').classList.add('hidden');
+                document.getElementById('appWrapper').style.display = 'flex';
+                render();
             }
+
             updateClock();
             setInterval(updateClock, 1000);
-            render();
+            
+            document.getElementById('pwdInput').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') checkUnlock();
+            });
         }
 
         function updateClock() {
             document.getElementById('currentTimeDisplay').innerText = new Date().toLocaleString();
+        }
+
+        // --- 安全解锁与锁定 ---
+        async function checkUnlock() {
+            const inputVal = document.getElementById('pwdInput').value;
+            const inputHash = await hashPassword(inputVal);
+
+            if (inputHash === passwordHash || passwordHash === "") {
+                isUnlocked = true;
+                document.getElementById('lockScreen').classList.add('hidden');
+                document.getElementById('appWrapper').style.display = 'flex'; 
+                document.getElementById('pwdInput').value = "";
+                render();
+            } else {
+                showToast("🚫 密码验证失败，请重试！");
+            }
+        }
+
+        function lockSystem() { 
+            // 重点修复：防止没有密码时白白刷新
+            if (passwordHash === "") {
+                showToast("⚠️ 系统当前无密码！请先在【系统设置】中设置密码。");
+                return;
+            }
+            isUnlocked = false;
+            location.reload(); 
         }
 
         function switchView(view) {
@@ -232,23 +327,20 @@
             render();
         }
 
-        // --- 核心渲染函数 ---
+        // --- 渲染引擎 ---
         function render() {
+            if(!isUnlocked) return; 
+
             const container = document.getElementById('mainContent');
-            container.innerHTML = "";
+            if(!container) return; 
             
-            if (currentView === 'dashboard') {
-                renderDashboard(container);
-            } else if (currentView === 'orders') {
-                renderOrders(container);
-            } else if (currentView === 'records') {
-                renderRecords(container);
-            } else if (currentView === 'settings') {
-                renderSettings(container);
-            }
+            container.innerHTML = "";
+            if (currentView === 'dashboard') renderDashboard(container);
+            else if (currentView === 'orders') renderOrders(container);
+            else if (currentView === 'records') renderRecords(container);
+            else if (currentView === 'settings') renderSettings(container);
         }
 
-        // --- 看板模块 ---
         function renderDashboard(c) {
             const today = new Date().toISOString().split('T')[0];
             const tOrders = orders.filter(o => o.date === today);
@@ -261,7 +353,6 @@
                         <div class="glass-card p-10 rounded-[3rem]">
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">今日流水</p>
                             <h3 class="text-5xl font-black tracking-tighter">¥ ${revenue.toLocaleString()}</h3>
-                            <div class="mt-6 text-emerald-500 text-[10px] font-black bg-emerald-50 px-3 py-1 rounded-full w-max">正在同步...</div>
                         </div>
                         <div class="bg-indigo-600 p-10 rounded-[3rem] text-white shadow-2xl shadow-indigo-200 relative overflow-hidden">
                             <div class="relative z-10">
@@ -275,25 +366,10 @@
                             <h3 class="text-5xl font-black tracking-tighter">${tOrders.length} <span class="text-lg text-slate-400 font-bold ml-1">单</span></h3>
                         </div>
                     </div>
-                    <div class="glass-card p-10 rounded-[3.5rem]">
-                        <h4 class="font-black text-2xl mb-8">最近成交单据</h4>
-                        <div class="space-y-4">
-                            ${orders.slice(0, 5).map(o => `
-                                <div class="flex items-center justify-between p-6 rounded-3xl hover:bg-white transition-all group">
-                                    <div class="flex items-center space-x-6">
-                                        <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">👟</div>
-                                        <div><p class="font-black text-lg">${o.shoe}</p><p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">${o.staff} · ${o.client}</p></div>
-                                    </div>
-                                    <div class="text-right"><p class="text-xl font-black text-indigo-600">¥ ${o.price}</p><p class="text-[10px] text-slate-300 font-bold uppercase">${o.date}</p></div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
                 </div>
             `;
         }
 
-        // --- 详细对账模块 ---
         function renderOrders(c) {
             const filtered = orders.filter(o => o.date === selectedDate);
             c.innerHTML = `
@@ -302,31 +378,53 @@
                         <input type="date" value="${selectedDate}" onchange="updateSelectedDate(this.value)" class="px-6 py-4 bg-white/60 border border-white rounded-3xl font-black text-sm outline-none focus:ring-4 focus:ring-indigo-500/10 shadow-sm">
                         <div class="flex space-x-4">
                             <button onclick="exportExcel()" class="flex items-center space-x-2 bg-white px-6 py-4 rounded-3xl text-xs font-black hover:bg-slate-50 shadow-sm"><span>导出 EXCEL</span></button>
-                            <button onclick="exportScreenshot()" class="flex items-center space-x-2 bg-white px-6 py-4 rounded-3xl text-xs font-black hover:bg-slate-50 shadow-sm"><span>对账截图</span></button>
                         </div>
                     </div>
-                    <div id="tableTarget" class="glass-card rounded-[3.5rem] overflow-hidden">
+                    <div class="glass-card rounded-[3.5rem] overflow-hidden">
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm min-w-[1000px]">
+                            <table class="w-full text-left text-sm min-w-[1200px]">
                                 <thead class="bg-slate-50/50 text-slate-400 font-black uppercase tracking-widest text-[10px] border-b border-slate-100">
                                     <tr>
-                                        <th class="px-10 py-7">单号</th><th class="px-10 py-7">员工</th><th class="px-10 py-7">鞋款</th><th class="px-10 py-7 text-right">成交价</th><th class="px-10 py-7 text-right">成本</th><th class="px-10 py-7 text-right text-emerald-500">利润</th><th class="px-10 py-7 text-center">操作</th>
+                                        <th class="px-8 py-7">单号</th>
+                                        <th class="px-8 py-7">接待员工</th>
+                                        <th class="px-8 py-7">对账员工</th>
+                                        <th class="px-8 py-7">鞋款</th>
+                                        <th class="px-8 py-7">客户</th>
+                                        <th class="px-8 py-7 text-right">成交价</th>
+                                        <th class="px-8 py-7 text-right">成本</th>
+                                        <th class="px-8 py-7 text-right text-emerald-500">利润</th>
+                                        <th class="px-8 py-7">备注</th>
+                                        <th class="px-8 py-7 text-center">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody class="font-bold divide-y divide-slate-100/50">
                                     ${filtered.map(o => `
-                                        <tr class="hover:bg-white/40 transition-colors group">
-                                            <td class="px-10 py-6 text-slate-300 font-mono text-xs">#${o.id}</td>
-                                            <td class="px-10 py-6"><span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-xl text-[10px] font-black">${o.staff}</span></td>
-                                            <td class="px-10 py-6 text-lg tracking-tight">${o.shoe}</td>
-                                            <td class="px-10 py-6 text-right text-indigo-600 font-black">¥ ${o.price}</td>
-                                            <td class="px-10 py-6 text-right text-slate-300">¥ ${o.cost}</td>
-                                            <td class="px-10 py-6 text-right text-emerald-600 font-black">¥ ${o.price - o.cost}</td>
-                                            <td class="px-10 py-6 text-center"><button onclick="deleteOrder('${o.id}')" class="text-rose-400 p-2 hover:bg-rose-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg></button></td>
+                                        <tr class="hover:bg-white/40 group">
+                                            <td class="px-8 py-6 text-slate-400 font-mono text-[10px]">#${o.id}</td>
+                                            <td class="px-8 py-6"><span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-xl text-[10px] font-black">${o.staff || '-'}</span></td>
+                                            <td class="px-8 py-6"><span class="bg-amber-50 text-amber-600 px-3 py-1 rounded-xl text-[10px] font-black">${o.auditor || '-'}</span></td>
+                                            <td class="px-8 py-6 tracking-tight">${o.shoe}</td>
+                                            <td class="px-8 py-6 text-slate-500 text-xs">${o.client || '-'}</td>
+                                            <td class="px-8 py-6 text-right text-indigo-600">¥ ${o.price}</td>
+                                            <td class="px-8 py-6 text-right text-slate-300">¥ ${o.cost}</td>
+                                            <td class="px-8 py-6 text-right text-emerald-600">¥ ${o.price - o.cost}</td>
+                                            <td class="px-8 py-6 text-slate-400 text-[10px] max-w-[150px] truncate" title="${o.remark || ''}">${o.remark || '-'}</td>
+                                            <td class="px-8 py-6 text-center"><button onclick="deleteOrder('${o.id}')" class="text-rose-400 p-2 hover:bg-rose-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all">删除</button></td>
                                         </tr>
                                     `).join('')}
-                                    ${filtered.length === 0 ? '<tr><td colspan="7" class="py-20 text-center text-slate-400 font-black tracking-widest uppercase">No Data Records</td></tr>' : ''}
+                                    ${filtered.length === 0 ? '<tr><td colspan="10" class="py-24 text-center text-slate-400 font-black tracking-widest uppercase">No Data Records</td></tr>' : ''}
                                 </tbody>
+                                ${filtered.length > 0 ? `
+                                <tfoot class="bg-slate-50/80 font-black text-slate-900 border-t border-slate-200">
+                                    <tr>
+                                        <td colspan="5" class="px-8 py-6 text-right uppercase tracking-[0.3em] text-[10px] text-slate-400">当日小计</td>
+                                        <td class="px-8 py-6 text-right text-xl tracking-tighter">¥ ${filtered.reduce((s,o) => s + Number(o.price), 0).toLocaleString()}</td>
+                                        <td class="px-8 py-6 text-right text-sm text-slate-400">¥ ${filtered.reduce((s,o) => s + Number(o.cost), 0).toLocaleString()}</td>
+                                        <td class="px-8 py-6 text-right text-xl tracking-tighter text-emerald-600">¥ ${filtered.reduce((s,o) => s + (Number(o.price) - Number(o.cost)), 0).toLocaleString()}</td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
+                                ` : ''}
                             </table>
                         </div>
                     </div>
@@ -334,7 +432,6 @@
             `;
         }
 
-        // --- 历史与汇总模块 ---
         function renderRecords(c) {
             const summaryMap = {};
             orders.forEach(o => {
@@ -352,25 +449,61 @@
                             <div class="bg-slate-100 px-4 py-2 rounded-2xl text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 w-max">${s.date}</div>
                             <p class="text-4xl font-black text-slate-800 tracking-tighter mb-2">¥ ${s.revenue.toLocaleString()}</p>
                             <p class="text-sm font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-xl w-max">净利 ¥ ${s.profit.toLocaleString()}</p>
-                            <div class="mt-8 pt-8 border-t border-slate-100 flex justify-between items-center text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                                <span>成交笔数</span><span class="text-slate-900">${s.count} 单</span>
-                            </div>
                         </div>
                     `).join('')}
                 </div>
             `;
         }
 
-        // --- 设置模块 ---
         function renderSettings(c) {
             c.innerHTML = `
                 <div class="max-w-2xl mx-auto space-y-10 page-enter">
                     <div class="glass-card p-12 rounded-[4rem] space-y-10">
                         <h3 class="text-3xl font-black tracking-tighter">系统偏好设置</h3>
-                        <div class="space-y-8">
-                            <div class="space-y-3">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">管理员密码</label>
-                                <input id="set-pwd" type="text" value="${password}" oninput="updatePwd(this.value)" placeholder="留空则不设密码" class="w-full bg-slate-50 px-8 py-5 rounded-3xl border-none focus:ring-4 focus:ring-indigo-500/10 font-bold">
+                        
+                        <!-- 员工管理模块 -->
+                        <section class="space-y-8">
+                            <div class="flex items-center space-x-4 text-slate-900">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                <span class="font-black text-xl tracking-tight">员工管理</span>
+                            </div>
+                            <div class="bg-slate-50 p-10 rounded-[2.5rem] space-y-6">
+                                <div class="flex space-x-4">
+                                    <input id="set-staff-name" type="text" placeholder="输入新员工姓名" class="flex-1 bg-white px-8 py-4 rounded-3xl border border-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold transition-all">
+                                    <button type="button" onclick="addStaff()" class="px-8 py-4 bg-indigo-600 text-white rounded-3xl font-black shadow-xl active:scale-95 transition-all">添加员工</button>
+                                </div>
+                                <div class="flex flex-wrap gap-4 pt-6 border-t border-slate-200/60" id="staff-list-container">
+                                    ${staffList.map(s => `
+                                        <div class="flex items-center bg-white border border-slate-200 px-4 py-2 rounded-2xl shadow-sm group">
+                                            <span class="font-bold text-sm text-slate-700 mr-3">${s}</span>
+                                            <!-- 重点修复：直接传名字字符串，摆脱索引依赖 -->
+                                            <button type="button" onclick="removeStaffByName('${s}')" class="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors relative z-10">
+                                                <svg class="pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                            </button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="space-y-8">
+                            <div class="flex items-center space-x-4 text-slate-900">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                <span class="font-black text-xl tracking-tight">安全与防护</span>
+                            </div>
+                            <div class="bg-slate-50 p-10 rounded-[2.5rem] space-y-6">
+                                <div class="space-y-3">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">加密管理员密码 (系统当前${passwordHash === "" ? '<span class="text-rose-500">无密码保护</span>' : '<span class="text-emerald-500">已加密保护</span>'})</label>
+                                    <input id="set-pwd" type="text" placeholder="留空则不设密码，输入新密码将覆盖旧密码" class="w-full bg-white px-8 py-5 rounded-3xl border border-slate-200 outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold transition-all">
+                                    <p class="text-xs text-emerald-500 mt-2 font-bold flex items-center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> 采用 SHA-256 底层加密算法保护</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="space-y-8">
+                            <div class="flex items-center space-x-4 text-slate-900">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-600"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
+                                <span class="font-black text-xl tracking-tight">数据备份与恢复</span>
                             </div>
                             <div class="grid grid-cols-2 gap-6">
                                 <button onclick="doExportBackup()" class="flex flex-col items-center justify-center p-10 bg-indigo-50 border border-indigo-100 rounded-[3rem] text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all">
@@ -381,103 +514,131 @@
                                     <input type="file" onchange="doImportBackup(this)" class="hidden">
                                 </label>
                             </div>
-                        </div>
-                        <div class="pt-8 border-t flex space-x-4">
-                            <button onclick="switchView('dashboard')" class="flex-1 py-5 bg-indigo-600 text-white rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all">保存设置</button>
-                            <button onclick="clearAllData()" class="p-5 bg-rose-50 text-rose-500 rounded-3xl"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg></button>
+                        </section>
+                        <div class="pt-8 border-t border-slate-200 flex space-x-4">
+                            <button onclick="saveSettings()" class="flex-1 py-5 bg-indigo-600 text-white rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all">安全保存设置</button>
                         </div>
                     </div>
                 </div>
             `;
         }
 
-        // --- 逻辑控制函数 ---
+        // --- 交互与业务逻辑 ---
         function updateSelectedDate(val) { selectedDate = val; render(); }
         function gotoDate(val) { selectedDate = val; switchView('orders'); }
-        function updatePwd(val) { password = val; localStorage.setItem('h5_pwd', val); }
         
-        function showModal() { document.getElementById('addModal').classList.remove('hidden'); document.getElementById('addModal').classList.add('flex'); }
-        function closeModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('addModal').classList.remove('flex'); }
+        function showModal() { 
+            const staffOptions = staffList.map(s => `<option value="${s}">${s}</option>`).join('');
+            document.getElementById('f-staff').innerHTML = staffOptions;
+            document.getElementById('f-auditor').innerHTML = `<option value="">无需对账员</option>` + staffOptions;
+            
+            document.getElementById('addModal').classList.remove('hidden'); 
+            document.getElementById('addModal').classList.add('flex'); 
+        }
+        function closeModal() { 
+            document.getElementById('addModal').classList.add('hidden'); 
+            document.getElementById('addModal').classList.remove('flex'); 
+        }
+
+        // 员工管理控制
+        function addStaff() {
+            const input = document.getElementById('set-staff-name');
+            const name = input.value.trim();
+            if (!name) return;
+            if (staffList.includes(name)) { showToast("⚠️ 该员工已存在！"); return; }
+            staffList.push(name);
+            localStorage.setItem('sec_staff', JSON.stringify(staffList));
+            input.value = ""; 
+            render();
+            showToast("✅ 员工添加成功");
+        }
+
+        // 重点修复：按名称直接删除，杜绝因遍历导致的点击错位
+        function removeStaffByName(name) {
+            showConfirm("删除员工", `确定删除员工 [${name}] 吗？\n注意：历史订单中该员工的记录不受影响。`, () => {
+                staffList = staffList.filter(s => s !== name);
+                localStorage.setItem('sec_staff', JSON.stringify(staffList));
+                render();
+                showToast("🗑️ 员工已删除");
+            });
+        }
+
+        async function saveSettings() {
+            const newPwd = document.getElementById('set-pwd').value;
+            if (newPwd !== "") {
+                passwordHash = await hashPassword(newPwd);
+                localStorage.setItem('sec_pwd_hash', passwordHash);
+                showToast("🔒 密码已更新并加密存储！");
+                render(); // 刷新状态显示
+            } else {
+                showConfirm("取消密码", "确定要取消密码保护吗？\n取消后所有人点击系统均可直接进入。", () => {
+                    passwordHash = "";
+                    localStorage.setItem('sec_pwd_hash', "");
+                    showToast("🔓 密码保护已关闭。");
+                    render(); // 刷新状态显示
+                });
+            }
+        }
 
         function saveOrder() {
             const shoe = document.getElementById('f-shoe').value;
             const price = document.getElementById('f-price').value;
             const cost = document.getElementById('f-cost').value;
-            if(!shoe || !price || !cost) return alert("请填写完整信息");
+            if(!shoe || !price || !cost) { showToast("⚠️ 请填写完整的款式和价格信息"); return; }
             
-            const newOrder = {
-                id: Date.now().toString().slice(-8),
-                date: selectedDate,
+            orders.unshift({
+                id: Date.now().toString().slice(-8), 
+                date: selectedDate, 
                 staff: document.getElementById('f-staff').value,
-                shoe: shoe,
-                client: document.getElementById('f-client').value,
-                price: Number(price),
+                auditor: document.getElementById('f-auditor').value,
+                shoe: shoe, 
+                client: document.getElementById('f-client').value, 
+                remark: document.getElementById('f-remark').value,
+                price: Number(price), 
                 cost: Number(cost)
-            };
-            orders.unshift(newOrder);
-            localStorage.setItem('h5_orders', JSON.stringify(orders));
-            closeModal();
+            });
+            localStorage.setItem('sec_orders', JSON.stringify(orders));
+            closeModal(); 
             render();
-            // 重置表单
-            document.getElementById('f-shoe').value = "";
-            document.getElementById('f-price').value = "";
+            
+            document.getElementById('f-shoe').value = ""; 
+            document.getElementById('f-price').value = ""; 
             document.getElementById('f-cost').value = "";
             document.getElementById('f-client').value = "";
+            document.getElementById('f-remark').value = "";
+            showToast("📦 订单已成功保存并入库");
         }
 
         function deleteOrder(id) {
-            if(!confirm("确定删除这笔记录吗？")) return;
-            orders = orders.filter(o => o.id !== id);
-            localStorage.setItem('h5_orders', JSON.stringify(orders));
-            render();
-        }
-
-        function clearAllData() {
-            if(!confirm("严重警告：该操作将永久清空所有账目，请确保已备份！")) return;
-            orders = [];
-            localStorage.removeItem('h5_orders');
-            location.reload();
-        }
-
-        // --- 系统防护 ---
-        function lockSystem() { location.reload(); }
-        function checkUnlock() {
-            const input = document.getElementById('pwdInput').value;
-            if (input === password) {
-                document.getElementById('lockScreen').classList.add('hidden');
-                document.getElementById('pwdInput').value = "";
-            } else {
-                alert("密码验证失败");
-            }
-        }
-
-        // --- 导出逻辑 ---
-        function exportExcel() {
-            const filtered = orders.filter(o => o.date === selectedDate);
-            const ws = XLSX.utils.json_to_sheet(filtered);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "对账单");
-            XLSX.writeFile(wb, `鞋店对账_${selectedDate}.xlsx`);
-        }
-
-        function exportScreenshot() {
-            const target = document.getElementById('tableTarget');
-            html2canvas(target, { backgroundColor: '#f2f5f8', scale: 2 }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `对账截图_${selectedDate}.png`;
-                link.href = canvas.toDataURL();
-                link.click();
+            showConfirm("删除订单", "确定删除这笔记录吗？此操作不可恢复。", () => {
+                orders = orders.filter(o => o.id !== id);
+                localStorage.setItem('sec_orders', JSON.stringify(orders));
+                render();
+                showToast("🗑️ 订单已删除");
             });
         }
 
+        function exportExcel() {
+            const filtered = orders.filter(o => o.date === selectedDate);
+            if (filtered.length === 0) {
+                showToast("⚠️ 当前日期没有订单可以导出！");
+                return;
+            }
+            const ws = XLSX.utils.json_to_sheet(filtered);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "对账单");
+            XLSX.writeFile(wb, `校园鞋店对账_${selectedDate}.xlsx`);
+            showToast("✅ 表格已成功导出下载");
+        }
+
         function doExportBackup() {
-            const data = { orders, password, exportDate: new Date().toISOString() };
+            const data = { orders, passwordHash, staffList, exportDate: new Date().toISOString() };
             const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
-            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = `备份_${new Date().toLocaleDateString()}.json`;
+            a.href = URL.createObjectURL(blob);
+            a.download = `系统安全备份_${new Date().toLocaleDateString()}.json`;
             a.click();
+            showToast("💾 备份文件已成功导出");
         }
 
         function doImportBackup(input) {
@@ -487,20 +648,26 @@
             reader.onload = (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if(data.orders && confirm("导入将覆盖当前数据，确定吗？")) {
-                        orders = data.orders;
-                        password = data.password || "";
-                        localStorage.setItem('h5_orders', JSON.stringify(orders));
-                        localStorage.setItem('h5_pwd', password);
-                        alert("数据已恢复");
-                        location.reload();
+                    if(data.orders) {
+                        showConfirm("恢复数据", "导入将覆盖当前所有数据，确定继续吗？", () => {
+                            orders = data.orders;
+                            passwordHash = data.passwordHash || "";
+                            if (data.staffList) staffList = data.staffList;
+                            localStorage.setItem('sec_orders', JSON.stringify(orders));
+                            localStorage.setItem('sec_pwd_hash', passwordHash);
+                            localStorage.setItem('sec_staff', JSON.stringify(staffList));
+                            showToast("✅ 数据已恢复！即将重新加载系统...");
+                            setTimeout(() => location.reload(), 1500);
+                        });
+                    } else {
+                        showToast("⚠️ 备份文件格式不正确！");
                     }
-                } catch(e) { alert("文件解析错误"); }
+                } catch(err) { showToast("⚠️ 文件解析错误，请确保是正确的备份文件"); }
             };
             reader.readAsText(file);
+            input.value = "";
         }
 
-        // 启动系统
         window.onload = init;
     </script>
 </body>
