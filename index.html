@@ -2,10 +2,8 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 移动端专属 Meta：防缩放、视口适配 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>校园鞋店管理系统 - HyperOS Security+</title>
-    <!-- 引入核心库 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -23,9 +21,7 @@
         .page-enter { animation: slideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
         @keyframes slideIn { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
-        /* PC端导航高亮 */
         .active-nav-pc { background: var(--mi-primary) !important; color: white !important; box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3); }
-        /* 移动端导航高亮 */
         .active-nav-mobile { color: var(--mi-primary) !important; font-weight: 900; }
         .active-nav-mobile svg { stroke-width: 3; transform: translateY(-2px); transition: all 0.3s; }
         
@@ -38,16 +34,12 @@
         .scale-in-center { animation: scaleInCenter 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
         @keyframes scaleInCenter { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
-        /* 隐藏主界面，直到验证成功 */
         #appWrapper { display: none; }
-        
-        /* 移动端底部安全区适配 */
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body class="min-h-screen text-slate-900">
 
-    <!-- ================== 全局 UI 组件 ================== -->
     <div id="customToast" class="fixed top-12 left-1/2 -translate-x-1/2 z-[10000] bg-slate-800/90 backdrop-blur-md text-white px-6 py-3.5 rounded-full shadow-2xl font-bold text-sm transition-all duration-300 opacity-0 pointer-events-none translate-y-[-20px] whitespace-nowrap">
         提示内容
     </div>
@@ -62,15 +54,10 @@
             </div>
         </div>
     </div>
-    <!-- ================================================== -->
-
-    <!-- 锁定遮罩层 -->
     <div id="lockScreen" class="fixed inset-0 z-[9999] bg-slate-950 flex items-center justify-center overflow-hidden">
         <div class="absolute top-[-10%] left-[-20%] w-[400px] h-[400px] md:w-[600px] md:h-[600px] bg-indigo-600/30 rounded-full blur-[100px] md:blur-[120px]"></div>
         <div class="relative z-10 w-full max-w-md p-8 md:p-12 text-center">
-            <div class="w-20 h-20 md:w-24 md:h-24 bg-indigo-600 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center text-white mx-auto mb-8 md:mb-10 shadow-2xl lock-pulse text-4xl md:text-5xl dynamic-sys-logo">
-                👟
-            </div>
+            <div class="w-20 h-20 md:w-24 md:h-24 bg-indigo-600 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center text-white mx-auto mb-8 md:mb-10 shadow-2xl lock-pulse text-4xl md:text-5xl dynamic-sys-logo">👟</div>
             <h1 class="text-2xl md:text-3xl font-black text-white mb-2 tracking-tight dynamic-sys-title">鞋店对账系统</h1>
             <p class="text-slate-400 mb-8 md:mb-10 text-xs md:text-sm">请输入管理密码解锁系统</p>
             <input type="password" id="pwdInput" placeholder="••••••" class="w-full bg-slate-900 text-white border border-slate-800 rounded-2xl md:rounded-3xl py-4 md:py-5 text-center text-2xl md:text-3xl tracking-[0.5em] focus:ring-4 focus:ring-indigo-500/30 outline-none mb-6">
@@ -78,16 +65,14 @@
         </div>
     </div>
 
-    <!-- 主程序容器 -->
     <div id="appWrapper" class="flex flex-col md:flex-row min-h-screen w-full">
         
-        <!-- PC端 侧边栏 (移动端隐藏) -->
         <aside class="hidden md:flex w-72 glass-sidebar flex-col p-8 sticky top-0 h-screen z-40">
             <div class="flex items-center space-x-4 mb-12">
                 <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl text-2xl dynamic-sys-logo">👟</div>
                 <div class="leading-tight">
                     <span class="text-xl font-black tracking-tighter dynamic-sys-title truncate w-40 block">鞋店对账</span>
-                    <p class="text-[10px] text-indigo-500 font-black uppercase tracking-widest mt-0.5">Security Pro</p>
+                    <p class="text-[10px] text-indigo-500 font-black uppercase tracking-widest mt-0.5">Cloud Sync Pro</p>
                 </div>
             </div>
 
@@ -118,7 +103,6 @@
             </div>
         </aside>
 
-        <!-- 移动端 底部导航 (PC端隐藏) -->
         <nav class="md:hidden fixed bottom-0 left-0 w-full glass-card border-t border-slate-200/50 flex justify-around items-center pt-2 pb-safe z-40 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
             <button onclick="switchView('dashboard')" id="m-btn-dashboard" class="nav-btn-m flex-1 flex flex-col items-center py-2 text-slate-400 active-nav-mobile">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
@@ -128,7 +112,6 @@
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M3 12h18"/><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
                 <span class="text-[10px] mt-1 font-bold">对账</span>
             </button>
-            <!-- 移动端悬浮大+号记一笔 -->
             <div class="relative -top-6">
                 <button onclick="showModal()" class="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-[0_8px_20px_rgba(79,70,229,0.4)] active:scale-95 transition-transform border-4 border-[#f2f5f8]">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -144,52 +127,52 @@
             </button>
         </nav>
 
-        <!-- 主体内容区 -->
         <div class="flex-1 flex flex-col min-w-0 pb-24 md:pb-0">
-            <!-- 顶部 Header -->
             <header class="h-16 md:h-24 bg-white/60 backdrop-blur-xl border-b border-slate-200/50 flex items-center justify-between px-4 md:px-10 sticky top-0 z-30">
                 <div class="flex items-center space-x-3 md:space-x-8">
-                    <!-- 移动端专属左侧Logo展示 -->
                     <div class="md:hidden w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md text-sm dynamic-sys-logo">👟</div>
                     <div class="flex flex-col">
                         <span class="hidden md:inline text-xs font-black text-slate-400 uppercase tracking-widest mb-1">当前时间</span>
-                        <span id="currentTimeDisplay" class="text-xs md:text-sm font-bold text-slate-700">加载时间中...</span>
+                        <div class="flex items-center space-x-2">
+                            <span id="currentTimeDisplay" class="text-xs md:text-sm font-bold text-slate-700">加载时间中...</span>
+                            <span id="cloudStatusBadge" class="hidden text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">☁️ 本地</span>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="flex items-center space-x-3 md:space-x-6">
-                    <!-- PC端右上角记一笔按钮 (移动端移到了底部中间) -->
+                    <button id="btnManualSync" onclick="pullFromCloud(true)" class="hidden md:flex bg-emerald-50 hover:bg-emerald-100 text-emerald-600 px-4 py-2 rounded-xl font-black text-xs shadow-sm items-center space-x-1 transition-all active:scale-[0.96]">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 2v6h6"/></svg>
+                        <span>拉取云端</span>
+                    </button>
+                    <button id="btnManualSyncMobile" onclick="pullFromCloud(true)" class="md:hidden w-8 h-8 hidden items-center justify-center text-emerald-600 bg-emerald-50 rounded-lg active:scale-90 transition-all">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 2v6h6"/></svg>
+                    </button>
+
                     <button onclick="showModal()" class="hidden md:flex bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-2xl font-black text-sm shadow-2xl shadow-indigo-100 items-center space-x-3 transition-all active:scale-[0.96]">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                         <span>记一笔</span>
                     </button>
-                    <!-- 移动端专属顶部锁定按钮 -->
                     <button onclick="lockSystem()" class="md:hidden w-8 h-8 flex items-center justify-center text-rose-500 bg-rose-50 rounded-lg active:scale-90 transition-all">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V5a5 5 0 0 1 9.9-1"/></svg>
                     </button>
-                    <!-- PC端右上角小Logo -->
                     <div class="hidden md:flex w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-xl border-2 border-white items-center justify-center text-white font-black text-2xl dynamic-sys-logo">👟</div>
                 </div>
             </header>
 
             <main id="mainContent" class="p-4 md:p-10 overflow-y-auto overflow-x-hidden flex-1">
-                <!-- 内容由 JS 动态生成 -->
-            </main>
+                </main>
 
-            <!-- 专属页脚与备案信息 -->
             <footer class="w-full py-4 md:py-6 mt-auto text-center text-[10px] md:text-xs font-bold text-slate-400 tracking-wider">
                 <p>jay for meizhiyuan</p>
                 <p class="mt-1 hover:text-indigo-500 transition-colors cursor-pointer">
                     <a href="https://beian.miit.gov.cn/" target="_blank">👮‍备案号 闽ICP备2023017518号</a>
                 </p>
-                <p class="mt-2 text-[9px] opacity-50" id="ua-display"></p>
             </footer>
         </div>
     </div>
 
-    <!-- 记一笔 弹窗 -->
     <div id="addModal" class="fixed inset-0 z-[500] bg-slate-900/60 backdrop-blur-md items-end md:items-center justify-center p-0 md:p-8 hidden">
-        <!-- 移动端底边滑出，PC端居中弹出 -->
         <div class="bg-white w-full md:max-w-2xl rounded-t-[2.5rem] md:rounded-[4rem] p-6 md:p-12 shadow-2xl space-y-6 md:space-y-10 border-t md:border border-white max-h-[90vh] overflow-y-auto page-enter pb-safe">
             <div class="flex justify-between items-start sticky top-0 bg-white z-10 pb-2">
                 <div>
@@ -250,17 +233,14 @@
     </div>
 
     <script>
-        // --- UA 自动嗅探与环境适配 ---
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
-        // --- 全局 UI 弹窗与更新机制 ---
         let activeConfirmCallback = null;
 
         function showToast(msg) {
             const toast = document.getElementById('customToast');
             toast.innerText = msg;
             toast.style.opacity = '1';
-            // 移动端向下偏移多一点避免被刘海挡住
             toast.style.transform = isMobile ? 'translate(-50%, 20px)' : 'translate(-50%, 0)';
             setTimeout(() => {
                 toast.style.opacity = '0';
@@ -272,7 +252,6 @@
             document.getElementById('dialogTitle').innerText = title;
             document.getElementById('dialogMessage').innerText = msg;
             activeConfirmCallback = callback; 
-            
             const dialog = document.getElementById('customDialog');
             dialog.classList.remove('hidden');
             dialog.classList.add('flex');
@@ -309,26 +288,28 @@
             return "hyper_sec_" + Math.abs(hash).toString(36);
         }
 
-        // --- 数据状态管理 ---
+        // --- 数据与云端状态管理 ---
         let sysTitle = localStorage.getItem('sec_sys_title') || '校园鞋店系统';
         let sysLogo = localStorage.getItem('sec_sys_logo') || '👟';
         let savedStaff = JSON.parse(localStorage.getItem('sec_staff'));
         let staffList = (savedStaff && savedStaff.length > 0) ? savedStaff : ['老板'];
-        let orders = JSON.parse(localStorage.getItem('sec_orders')) || [
-            { id: '26032301', date: '2026-03-23', staff: '老板', auditor: '老板', client: '张三', shoe: '空军一号', price: 168, cost: 85, tracking: 'SF12345678', remark: '首单内测送袜', status: '已发货' }
-        ];
+        let orders = JSON.parse(localStorage.getItem('sec_orders')) || [];
+        
         let passwordHash = localStorage.getItem('sec_pwd_hash') || ""; 
         let isUnlocked = (passwordHash === ""); 
         let currentView = 'dashboard';
         let selectedDate = new Date().toISOString().split('T')[0];
         let editingOrderId = null;
 
+        // 【新增】云端同步配置
+        let cloudApiKey = localStorage.getItem('sec_cloud_api') || '';
+        let cloudBinId = localStorage.getItem('sec_cloud_bin') || '';
+        let isCloudEnabled = (cloudApiKey !== '' && cloudBinId !== '');
+
         // --- 系统初始化 ---
         async function init() {
             applyBranding();
-            
-            // 显示检测到的UA状态（辅助确认）
-            document.getElementById('ua-display').innerText = isMobile ? "Mobile Mode Activated" : "Desktop Mode Active";
+            checkCloudUI();
 
             const observer = new MutationObserver(() => {
                 if (!isUnlocked) {
@@ -346,7 +327,9 @@
             } else {
                 document.getElementById('lockScreen').classList.add('hidden');
                 document.getElementById('appWrapper').style.display = 'flex';
-                switchView(currentView); // 初始渲染并应用导航高亮
+                switchView(currentView);
+                // 解锁成功后，如果有云端配置，自动拉取最新数据
+                if(isCloudEnabled) pullFromCloud(false);
             }
 
             updateClock();
@@ -359,10 +342,72 @@
 
         function updateClock() {
             const now = new Date();
-            const options = { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-            // 移动端精简时间显示
             document.getElementById('currentTimeDisplay').innerText = isMobile ? now.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'}) : now.toLocaleString('zh-CN');
         }
+
+        function checkCloudUI() {
+            const badge = document.getElementById('cloudStatusBadge');
+            const syncBtnPc = document.getElementById('btnManualSync');
+            const syncBtnMobile = document.getElementById('btnManualSyncMobile');
+            if(isCloudEnabled) {
+                badge.classList.remove('hidden');
+                badge.innerText = '☁️ 云端同步中';
+                badge.className = 'text-[9px] bg-emerald-50 text-emerald-500 px-2 py-0.5 rounded-full font-bold ml-2';
+                syncBtnPc.classList.remove('hidden');
+                syncBtnPc.classList.add('md:flex');
+                syncBtnMobile.classList.remove('hidden');
+                syncBtnMobile.classList.add('flex');
+            } else {
+                badge.classList.add('hidden');
+                syncBtnPc.classList.add('hidden');
+                syncBtnPc.classList.remove('md:flex');
+                syncBtnMobile.classList.add('hidden');
+                syncBtnMobile.classList.remove('flex');
+            }
+        }
+
+        // ================= 云端核心逻辑 (基于 JSONBin) =================
+        async function pullFromCloud(isManual = false) {
+            if (!isCloudEnabled) return;
+            if(isManual) showToast("☁️ 正在从云端拉取最新数据...");
+            try {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${cloudBinId}`, {
+                    method: 'GET',
+                    headers: { 'X-Master-Key': cloudApiKey }
+                });
+                const data = await res.json();
+                if (data.record) {
+                    if (data.record.orders) orders = data.record.orders;
+                    if (data.record.staffList) staffList = data.record.staffList;
+                    localStorage.setItem('sec_orders', JSON.stringify(orders));
+                    localStorage.setItem('sec_staff', JSON.stringify(staffList));
+                    render();
+                    if(isManual) showToast("✅ 云端数据同步完成！");
+                }
+            } catch (e) {
+                if(isManual) showToast("⚠️ 云端拉取失败，请检查网络或云端密钥");
+            }
+        }
+
+        async function pushToCloud() {
+            if (!isCloudEnabled) return;
+            try {
+                document.getElementById('cloudStatusBadge').innerText = '☁️ 保存至云端...';
+                await fetch(`https://api.jsonbin.io/v3/b/${cloudBinId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': cloudApiKey
+                    },
+                    body: JSON.stringify({ orders, staffList })
+                });
+                document.getElementById('cloudStatusBadge').innerText = '☁️ 云端已同步';
+            } catch (e) {
+                showToast("⚠️ 云端保存失败，数据已暂存本地");
+                document.getElementById('cloudStatusBadge').innerText = '⚠️ 云端断开';
+            }
+        }
+        // ==============================================================
 
         async function checkUnlock() {
             const inputVal = document.getElementById('pwdInput').value;
@@ -373,6 +418,7 @@
                 document.getElementById('appWrapper').style.display = 'flex'; 
                 document.getElementById('pwdInput').value = "";
                 switchView(currentView);
+                if(isCloudEnabled) pullFromCloud(false);
             } else {
                 showToast("🚫 密码验证失败，请重试！");
             }
@@ -391,8 +437,6 @@
 
         function switchView(view) {
             currentView = view;
-            
-            // PC 端导航样式切换
             document.querySelectorAll('.nav-btn-pc').forEach(b => {
                 b.classList.remove('active-nav-pc');
                 b.classList.add('text-slate-500', 'hover:bg-white/60');
@@ -403,7 +447,6 @@
                 pcBtn.classList.remove('text-slate-500', 'hover:bg-white/60');
             }
 
-            // 移动端导航样式切换
             document.querySelectorAll('.nav-btn-m').forEach(b => {
                 b.classList.remove('active-nav-mobile');
             });
@@ -411,9 +454,7 @@
             if(mBtn) {
                 mBtn.classList.add('active-nav-mobile');
             }
-
             render();
-            // 切换视图后自动滚动到顶部
             document.getElementById('mainContent').scrollTop = 0;
         }
 
@@ -460,8 +501,6 @@
 
         function renderOrders(c) {
             const filtered = orders.filter(o => o.date === selectedDate);
-            
-            // 移动端滑动提示
             const swipeHint = isMobile ? `<div class="text-center text-[10px] text-indigo-400 font-bold mb-3 animate-pulse">👉 左右滑动表格查看完整对账信息</div>` : '';
 
             c.innerHTML = `
@@ -519,7 +558,7 @@
                                             </td>
                                         </tr>
                                     `).join('')}
-                                    ${filtered.length === 0 ? '<tr><td colspan="9" class="py-20 md:py-24 text-center text-slate-300 font-black tracking-widest uppercase text-xs md:text-sm">No Data Records</td></tr>' : ''}
+                                    ${filtered.length === 0 ? '<tr><td colspan="9" class="py-20 md:py-24 text-center text-slate-300 font-black tracking-widest uppercase text-xs md:text-sm">暂无订单记录</td></tr>' : ''}
                                 </tbody>
                                 ${filtered.length > 0 ? `
                                 <tfoot class="bg-slate-50/80 font-black text-slate-900 border-t border-slate-100">
@@ -570,6 +609,24 @@
                         
                         <section class="space-y-4 md:space-y-6">
                             <div class="flex items-center space-x-3 md:space-x-4 text-slate-900">
+                                <span class="text-indigo-600 font-black text-xl">☁️</span>
+                                <span class="font-black text-lg md:text-xl tracking-tight">云端同步数据库</span>
+                            </div>
+                            <div class="bg-indigo-50/50 md:bg-indigo-50 p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] space-y-4 md:space-y-6 border border-indigo-100">
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">云端状态: ${isCloudEnabled ? '<span class="text-emerald-500">已连接 (自动同步开)</span>' : '<span class="text-slate-400">未连接 (仅存本地)</span>'}</label>
+                                    <input id="set-cloud-api" type="text" value="${cloudApiKey}" placeholder="输入云端 API 密钥 (留空关闭云同步)" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">数据仓库 (Bin ID)</label>
+                                    <input id="set-cloud-bin" type="text" value="${cloudBinId}" placeholder="输入数据容器 Bin ID" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700 font-mono">
+                                </div>
+                                <p class="text-[10px] text-indigo-400 leading-relaxed font-bold">接入 JSONBin 后，所有订单与员工数据将会在操作时自动同步至云端。员工在手机上的操作，老板在寝室也能实时看到。</p>
+                            </div>
+                        </section>
+
+                        <section class="space-y-4 md:space-y-6">
+                            <div class="flex items-center space-x-3 md:space-x-4 text-slate-900">
                                 <span class="text-indigo-600 font-black text-xl">💡</span>
                                 <span class="font-black text-lg md:text-xl tracking-tight">品牌个性化</span>
                             </div>
@@ -617,7 +674,7 @@
                             </div>
                             <div class="bg-slate-50/50 md:bg-slate-50 p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem]">
                                 <div class="space-y-2 md:space-y-3">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">状态: ${passwordHash === "" ? '<span class="text-rose-500">无密码</span>' : '<span class="text-emerald-500">已加密</span>'}</label>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">锁屏状态: ${passwordHash === "" ? '<span class="text-rose-500">无密码</span>' : '<span class="text-emerald-500">已加密</span>'}</label>
                                     <input id="set-pwd" type="text" placeholder="留空取消密码，填入新密码覆盖" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base">
                                 </div>
                             </div>
@@ -626,21 +683,21 @@
                         <section class="space-y-4 md:space-y-6">
                             <div class="flex items-center space-x-3 md:space-x-4 text-slate-900">
                                 <span class="text-indigo-600 font-black text-xl">💾</span>
-                                <span class="font-black text-lg md:text-xl tracking-tight">备份恢复</span>
+                                <span class="font-black text-lg md:text-xl tracking-tight">本地备份恢复</span>
                             </div>
                             <div class="grid grid-cols-2 gap-3 md:gap-6">
                                 <button onclick="doExportBackup()" class="flex flex-col items-center justify-center p-5 md:p-10 bg-indigo-50 border border-indigo-100 rounded-[1.5rem] md:rounded-[3rem] text-indigo-600 active:bg-indigo-600 active:text-white transition-colors">
-                                    <span class="font-black text-sm md:text-base">导出数据</span>
+                                    <span class="font-black text-sm md:text-base">导出离线数据</span>
                                 </button>
                                 <label class="flex flex-col items-center justify-center p-5 md:p-10 bg-slate-50 border border-slate-100 rounded-[1.5rem] md:rounded-[3rem] text-slate-600 active:bg-slate-100 cursor-pointer transition-colors">
-                                    <span class="font-black text-sm md:text-base">恢复数据</span>
+                                    <span class="font-black text-sm md:text-base">恢复离线数据</span>
                                     <input type="file" onchange="doImportBackup(this)" class="hidden">
                                 </label>
                             </div>
                         </section>
                         
                         <div class="pt-6 md:pt-8 border-t border-slate-100">
-                            <button onclick="saveSettings()" class="w-full py-4 md:py-5 bg-indigo-600 text-white rounded-2xl md:rounded-3xl font-black text-base md:text-lg shadow-lg active:scale-95 transition-transform">安全保存配置</button>
+                            <button onclick="saveSettings()" class="w-full py-4 md:py-5 bg-indigo-600 text-white rounded-2xl md:rounded-3xl font-black text-base md:text-lg shadow-lg active:scale-95 transition-transform">安全保存所有配置</button>
                         </div>
                     </div>
                 </div>
@@ -701,6 +758,7 @@
             localStorage.setItem('sec_staff', JSON.stringify(staffList));
             input.value = ""; 
             render();
+            pushToCloud(); // 触发云同步
             showToast("✅ 员工添加成功");
         }
 
@@ -709,11 +767,22 @@
                 staffList = staffList.filter(s => s !== name);
                 localStorage.setItem('sec_staff', JSON.stringify(staffList));
                 render();
+                pushToCloud(); // 触发云同步
                 showToast("🗑️ 员工已删除");
             });
         }
 
         async function saveSettings() {
+            // 保存云端配置
+            cloudApiKey = document.getElementById('set-cloud-api').value.trim();
+            cloudBinId = document.getElementById('set-cloud-bin').value.trim();
+            localStorage.setItem('sec_cloud_api', cloudApiKey);
+            localStorage.setItem('sec_cloud_bin', cloudBinId);
+            
+            const wasCloudEnabled = isCloudEnabled;
+            isCloudEnabled = (cloudApiKey !== '' && cloudBinId !== '');
+            checkCloudUI();
+
             sysTitle = document.getElementById('set-sys-title').value.trim() || '鞋店系统';
             sysLogo = document.getElementById('set-sys-logo').value.trim() || '👟';
             localStorage.setItem('sec_sys_title', sysTitle);
@@ -724,7 +793,7 @@
             if (newPwd !== "") {
                 passwordHash = await hashPassword(newPwd);
                 localStorage.setItem('sec_pwd_hash', passwordHash);
-                showToast("✅ 配置已更新，密码已加密存储！");
+                showToast("✅ 密码已加密存储！");
                 render(); 
             } else if (passwordHash !== "") {
                 showConfirm("取消密码", "未输入新密码。确定要取消锁定保护吗？", () => {
@@ -736,6 +805,11 @@
             } else {
                 showToast("✅ 配置已保存！");
                 render();
+            }
+
+            // 如果刚填入了云端配置，自动触发一次云同步
+            if(!wasCloudEnabled && isCloudEnabled) {
+                pullFromCloud(true);
             }
         }
 
@@ -773,7 +847,6 @@
                     orders[index].remark = document.getElementById('f-remark').value;
                     orders[index].price = Number(price);
                     orders[index].cost = Number(cost);
-                    showToast("✏️ 订单修改已保存");
                 }
             } else {
                 const newId = generateOrderId(selectedDate);
@@ -786,12 +859,13 @@
                     remark: document.getElementById('f-remark').value,
                     price: Number(price), cost: Number(cost)
                 });
-                showToast("📦 新订单已入库");
             }
             
             localStorage.setItem('sec_orders', JSON.stringify(orders));
             closeModal(); 
             render();
+            pushToCloud(); // 触发云同步
+            showToast(editingOrderId ? "✏️ 订单修改已保存" : "📦 新订单已入库");
         }
 
         function deleteOrder(id) {
@@ -799,6 +873,7 @@
                 orders = orders.filter(o => o.id !== id);
                 localStorage.setItem('sec_orders', JSON.stringify(orders));
                 render();
+                pushToCloud(); // 触发云同步
                 showToast("🗑️ 订单已删除");
             });
         }
@@ -818,9 +893,9 @@
             const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `${sysTitle}_备份_${new Date().toLocaleDateString()}.json`;
+            a.download = `${sysTitle}_离线备份_${new Date().toLocaleDateString()}.json`;
             a.click();
-            showToast("💾 备份导出成功");
+            showToast("💾 离线备份导出成功");
         }
 
         function doImportBackup(input) {
@@ -844,6 +919,7 @@
                             localStorage.setItem('sec_sys_title', sysTitle);
                             localStorage.setItem('sec_sys_logo', sysLogo);
                             
+                            pushToCloud(); // 将导入的本地数据直接覆盖到云端
                             showToast("✅ 数据已恢复，重载系统...");
                             setTimeout(() => location.reload(), 1000);
                         });
