@@ -199,11 +199,17 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                     <div class="space-y-1.5 md:space-y-2">
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">鞋款型号</label>
-                        <input id="f-shoe" type="text" placeholder="例如：AJ1 High" class="w-full bg-slate-50 px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-base md:text-lg">
+                        <select id="f-shoe" class="w-full bg-slate-50 px-4 py-3.5 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border-none outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-sm md:text-lg"></select>
                     </div>
-                    <div class="space-y-1.5 md:space-y-2">
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">客户姓名</label>
-                        <input id="f-client" type="text" placeholder="例如：张三" class="w-full bg-slate-50 px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-base md:text-lg">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1.5 md:space-y-2">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">颜色</label>
+                            <input id="f-color" type="text" placeholder="例如：纯白" class="w-full bg-slate-50 px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-base md:text-lg">
+                        </div>
+                        <div class="space-y-1.5 md:space-y-2">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">客户姓名</label>
+                            <input id="f-client" type="text" placeholder="如：张三" class="w-full bg-slate-50 px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-base md:text-lg">
+                        </div>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4 md:gap-8">
@@ -270,7 +276,6 @@
             closeDialog();
         }
 
-        // --- 新增：复制 Gist ID 功能 ---
         function copyGistId() {
             const id = document.getElementById('set-gist-id').value;
             if(id) {
@@ -308,7 +313,14 @@
         let sysLogo = localStorage.getItem('sec_sys_logo') || '👟';
         let savedStaff = JSON.parse(localStorage.getItem('sec_staff'));
         let staffList = (savedStaff && savedStaff.length > 0) ? savedStaff : ['老板'];
-        let orders = JSON.parse(localStorage.getItem('sec_orders')) || [];
+        
+        // 新增鞋款库状态管理
+        let savedShoes = JSON.parse(localStorage.getItem('sec_shoes'));
+        let shoeList = (savedShoes && savedShoes.length > 0) ? savedShoes : ['空军一号', '熊猫Dunk', '经典老爹鞋', '马丁靴'];
+
+        let orders = JSON.parse(localStorage.getItem('sec_orders')) || [
+            { id: '26032301', date: '2026-03-23', staff: '老板', auditor: '老板', client: '张三', shoe: '空军一号', color: '纯白', price: 168, cost: 85, tracking: 'SF12345678', remark: '首单内测送袜', status: '已发货' }
+        ];
         
         let passwordHash = localStorage.getItem('sec_pwd_hash') || ""; 
         let isUnlocked = (passwordHash === ""); 
@@ -316,7 +328,6 @@
         let selectedDate = new Date().toISOString().split('T')[0];
         let editingOrderId = null;
 
-        // 使用 GitHub Gist 的配置
         let githubToken = localStorage.getItem('sec_github_token') || '';
         let gistId = localStorage.getItem('sec_gist_id') || '';
         let isCloudEnabled = (githubToken !== '' && gistId !== '');
@@ -343,7 +354,6 @@
                 document.getElementById('lockScreen').classList.add('hidden');
                 document.getElementById('appWrapper').style.display = 'flex';
                 switchView(currentView);
-                // 解锁成功后自动拉取数据
                 if(isCloudEnabled) pullFromCloud(false);
             }
 
@@ -381,12 +391,11 @@
             }
         }
 
-        // ================= 云端架构 (增加防缓存穿透补丁) =================
+        // ================= 云端架构 =================
         async function pullFromCloud(isManual = false) {
             if (!isCloudEnabled) return;
             if(isManual) showToast("☁️ 正在拉取最新同步数据...");
             try {
-                // 【补丁】：加上 ?t=时间戳 和 no-cache 请求头，强制浏览器每次向 GitHub 拿最新数据，防止缓存作祟
                 const timestamp = new Date().getTime();
                 const res = await fetch(`https://api.github.com/gists/${gistId}?t=${timestamp}`, {
                     method: 'GET',
@@ -407,8 +416,10 @@
                     const content = JSON.parse(data.files["shoe_store_data.json"].content);
                     if (content.orders) orders = content.orders;
                     if (content.staffList) staffList = content.staffList;
+                    if (content.shoeList) shoeList = content.shoeList;
                     localStorage.setItem('sec_orders', JSON.stringify(orders));
                     localStorage.setItem('sec_staff', JSON.stringify(staffList));
+                    localStorage.setItem('sec_shoes', JSON.stringify(shoeList));
                     render();
                     if(isManual) showToast("✅ 云端数据同步完成！");
                 }
@@ -431,7 +442,7 @@
                     body: JSON.stringify({
                         files: {
                             "shoe_store_data.json": {
-                                content: JSON.stringify({ orders, staffList })
+                                content: JSON.stringify({ orders, staffList, shoeList })
                             }
                         }
                     })
@@ -444,7 +455,6 @@
                 document.getElementById('cloudStatusBadge').innerText = '⚠️ 云端断开';
             }
         }
-        // ==============================================================
 
         async function checkUnlock() {
             const inputVal = document.getElementById('pwdInput').value;
@@ -509,36 +519,82 @@
 
         function renderDashboard(c) {
             const today = new Date().toISOString().split('T')[0];
-            const tOrders = orders.filter(o => o.date === today);
-            const revenue = tOrders.reduce((s,o) => s + Number(o.price), 0);
-            const profit = tOrders.reduce((s,o) => s + (Number(o.price) - Number(o.cost)), 0);
+            // 只计算正常订单的流水和利润
+            const todayOrders = orders.filter(o => o.date === today && o.status !== '已退货');
+            const revenue = todayOrders.reduce((s,o) => s + Number(o.price), 0);
+            const profit = todayOrders.reduce((s,o) => s + (Number(o.price) - Number(o.cost)), 0);
+
+            // 计算所有历史订单中的爆款退货率
+            const shoeStats = {};
+            orders.forEach(o => {
+                if(!shoeStats[o.shoe]) shoeStats[o.shoe] = { total: 0, returned: 0 };
+                shoeStats[o.shoe].total++;
+                if(o.status === '已退货') shoeStats[o.shoe].returned++;
+            });
+            const returnRates = Object.entries(shoeStats).map(([shoe, stat]) => ({
+                shoe, total: stat.total, 
+                rate: stat.total > 0 ? (stat.returned / stat.total * 100).toFixed(1) : 0
+            })).sort((a, b) => b.rate - a.rate).slice(0, 4);
 
             c.innerHTML = `
                 <div class="space-y-6 md:space-y-10 page-enter">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
                         <div class="glass-card p-6 md:p-10 rounded-[2rem] md:rounded-[3rem]">
-                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 md:mb-3">今日流水</p>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 md:mb-3">今日有效流水</p>
                             <h3 class="text-3xl md:text-5xl font-black tracking-tighter">¥ ${revenue.toLocaleString()}</h3>
                         </div>
                         <div class="bg-indigo-600 p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] text-white shadow-2xl shadow-indigo-200 relative overflow-hidden">
                             <div class="relative z-10">
-                                <p class="text-indigo-100 text-[10px] font-black uppercase tracking-widest mb-2 md:mb-3">今日净利</p>
+                                <p class="text-indigo-100 text-[10px] font-black uppercase tracking-widest mb-2 md:mb-3">今日净利 (除退款)</p>
                                 <h3 class="text-3xl md:text-5xl font-black tracking-tighter">¥ ${profit.toLocaleString()}</h3>
                             </div>
                             <div class="absolute top-[-30%] right-[-10%] w-32 h-32 md:w-48 md:h-48 bg-white/10 rounded-full blur-2xl md:blur-3xl"></div>
                         </div>
                         <div class="glass-card p-6 md:p-10 rounded-[2rem] md:rounded-[3rem]">
-                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 md:mb-3">成交单数</p>
-                            <h3 class="text-3xl md:text-5xl font-black tracking-tighter">${tOrders.length} <span class="text-base md:text-lg text-slate-400 font-bold ml-1">单</span></h3>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 md:mb-3">有效成交数</p>
+                            <h3 class="text-3xl md:text-5xl font-black tracking-tighter">${todayOrders.length} <span class="text-base md:text-lg text-slate-400 font-bold ml-1">单</span></h3>
+                        </div>
+                    </div>
+
+                    <!-- 爆款退货率风控模块 -->
+                    <div class="glass-card p-6 md:p-10 rounded-[2rem] md:rounded-[3.5rem] mt-8 border-t-4 border-rose-400">
+                        <h4 class="font-black text-xl mb-6 text-slate-800 flex items-center"><span class="text-2xl mr-2">🚨</span> SKU 爆款退货率风控预警</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                            ${returnRates.length > 0 ? returnRates.map(r => `
+                                <div class="bg-slate-50 p-5 rounded-2xl border ${r.rate >= 20 ? 'border-rose-200 bg-rose-50' : 'border-slate-100'}">
+                                    <div class="text-xs font-bold text-slate-500 mb-1 truncate" title="${r.shoe}">${r.shoe}</div>
+                                    <div class="flex items-end justify-between">
+                                        <div class="text-2xl font-black ${r.rate >= 20 ? 'text-rose-600' : 'text-slate-800'}">${r.rate}%</div>
+                                        <div class="text-[10px] font-bold text-slate-400 mb-1">总单量: ${r.total}</div>
+                                    </div>
+                                    ${r.rate >= 20 ? '<div class="text-[9px] text-rose-500 font-bold mt-2">偏码或质量预警！</div>' : ''}
+                                </div>
+                            `).join('') : '<div class="text-slate-400 text-sm font-bold p-4">暂无足够的销售退货数据</div>'}
                         </div>
                     </div>
                 </div>
             `;
         }
 
+        function processReturn(id) {
+            showConfirm("处理退货", "确定将该订单标记为【已退货】吗？退款后的订单金额将不计入净利。", () => {
+                const index = orders.findIndex(o => o.id === id);
+                if (index !== -1) {
+                    orders[index].status = '已退货';
+                    localStorage.setItem('sec_orders', JSON.stringify(orders));
+                    render();
+                    pushToCloud();
+                    showToast("🔙 订单已成功标记为退货");
+                }
+            });
+        }
+
         function renderOrders(c) {
             const filtered = orders.filter(o => o.date === selectedDate);
             const swipeHint = isMobile ? `<div class="text-center text-[10px] text-indigo-400 font-bold mb-3 animate-pulse">👉 左右滑动表格查看完整对账信息</div>` : '';
+
+            // 计算该界面的统计时也应排除退货
+            const validFiltered = filtered.filter(o => o.status !== '已退货');
 
             c.innerHTML = `
                 <div class="space-y-5 md:space-y-8 page-enter">
@@ -554,23 +610,24 @@
                     ${swipeHint}
                     <div class="glass-card rounded-[2rem] md:rounded-[3.5rem] overflow-hidden border border-white/50 shadow-sm">
                         <div class="overflow-x-auto" style="-webkit-overflow-scrolling: touch;">
-                            <table class="w-full text-left text-sm min-w-[1000px] md:min-w-[1200px]">
+                            <table class="w-full text-left text-sm min-w-[1200px] md:min-w-[1400px]">
                                 <thead class="bg-slate-50/80 text-slate-400 font-black uppercase tracking-widest text-[10px] border-b border-slate-100">
                                     <tr>
                                         <th class="px-5 py-4 md:px-8 md:py-7 whitespace-nowrap">单号</th>
                                         <th class="px-5 py-4 md:px-8 md:py-7 whitespace-nowrap">接待/对账</th>
                                         <th class="px-5 py-4 md:px-8 md:py-7 whitespace-nowrap">鞋款</th>
+                                        <th class="px-5 py-4 md:px-8 md:py-7 whitespace-nowrap">颜色</th>
                                         <th class="px-5 py-4 md:px-8 md:py-7 whitespace-nowrap">客户</th>
                                         <th class="px-5 py-4 md:px-8 md:py-7 text-right whitespace-nowrap">成交价</th>
                                         <th class="px-5 py-4 md:px-8 md:py-7 text-right whitespace-nowrap">成本</th>
                                         <th class="px-5 py-4 md:px-8 md:py-7 text-right text-emerald-500 whitespace-nowrap">利润</th>
                                         <th class="px-5 py-4 md:px-8 md:py-7 whitespace-nowrap">单号/备注</th>
-                                        <th class="px-5 py-4 md:px-8 md:py-7 text-center whitespace-nowrap sticky right-0 bg-slate-50/90 backdrop-blur">操作</th>
+                                        <th class="px-5 py-4 md:px-8 md:py-7 text-center whitespace-nowrap sticky right-0 bg-slate-50/90 backdrop-blur">状态 / 处理</th>
                                     </tr>
                                 </thead>
                                 <tbody class="font-bold divide-y divide-slate-50">
                                     ${filtered.map(o => `
-                                        <tr class="hover:bg-slate-50/50 transition-colors group">
+                                        <tr class="hover:bg-slate-50/50 transition-colors group ${o.status === '已退货' ? 'opacity-50 grayscale' : ''}">
                                             <td class="px-5 py-4 md:px-8 md:py-6 text-slate-400 font-mono text-[10px]">#${o.id}</td>
                                             <td class="px-5 py-4 md:px-8 md:py-6">
                                                 <div class="flex flex-col space-y-1">
@@ -579,31 +636,38 @@
                                                 </div>
                                             </td>
                                             <td class="px-5 py-4 md:px-8 md:py-6 tracking-tight text-sm">${o.shoe}</td>
+                                            <td class="px-5 py-4 md:px-8 md:py-6 text-slate-500 text-xs">${o.color || '-'}</td>
                                             <td class="px-5 py-4 md:px-8 md:py-6 text-slate-500 text-xs">${o.client || '-'}</td>
-                                            <td class="px-5 py-4 md:px-8 md:py-6 text-right text-indigo-600 text-base">¥ ${o.price}</td>
+                                            <td class="px-5 py-4 md:px-8 md:py-6 text-right text-indigo-600 text-base ${o.status === '已退货' ? 'line-through' : ''}">¥ ${o.price}</td>
                                             <td class="px-5 py-4 md:px-8 md:py-6 text-right text-slate-300 text-sm">¥ ${o.cost}</td>
-                                            <td class="px-5 py-4 md:px-8 md:py-6 text-right text-emerald-600 text-base">¥ ${o.price - o.cost}</td>
+                                            <td class="px-5 py-4 md:px-8 md:py-6 text-right text-emerald-600 text-base ${o.status === '已退货' ? 'line-through text-rose-500' : ''}">¥ ${o.price - o.cost}</td>
                                             <td class="px-5 py-4 md:px-8 md:py-6">
                                                 <div class="text-indigo-400 text-[10px] font-mono mb-1">${o.tracking || '-'}</div>
                                                 <div class="text-slate-400 text-[10px] max-w-[120px] truncate" title="${o.remark || ''}">${o.remark || '-'}</div>
                                             </td>
                                             <td class="px-5 py-4 md:px-8 md:py-6 text-center sticky right-0 bg-white/90 backdrop-blur border-l border-slate-50">
-                                                <div class="flex items-center justify-center space-x-1 md:space-x-2 md:opacity-0 group-hover:opacity-100 transition-all">
-                                                    <button onclick="editOrder('${o.id}')" class="text-indigo-500 bg-indigo-50 md:bg-transparent p-2 rounded-xl text-xs md:text-sm active:scale-90 transition-all">修改</button>
-                                                    <button onclick="deleteOrder('${o.id}')" class="text-rose-500 bg-rose-50 md:bg-transparent p-2 rounded-xl text-xs md:text-sm active:scale-90 transition-all">删除</button>
+                                                <div class="flex flex-col items-center justify-center space-y-2 transition-all">
+                                                    ${o.status === '已退货' 
+                                                        ? `<span class="bg-rose-100 text-rose-600 px-3 py-1 rounded-xl text-[10px] font-black">已退货</span>
+                                                           <button onclick="deleteOrder('${o.id}')" class="text-rose-400 p-1 hover:bg-rose-50 rounded-lg text-xs transition-all">删除记录</button>` 
+                                                        : `<div class="flex items-center space-x-1">
+                                                               <button onclick="editOrder('${o.id}')" class="text-indigo-500 bg-indigo-50 md:bg-transparent p-2 rounded-xl text-xs md:text-sm active:scale-90 transition-all">修改</button>
+                                                               <button onclick="processReturn('${o.id}')" class="text-rose-500 bg-rose-50 md:bg-transparent p-2 rounded-xl text-xs md:text-sm active:scale-90 transition-all">退货</button>
+                                                           </div>`
+                                                    }
                                                 </div>
                                             </td>
                                         </tr>
                                     `).join('')}
-                                    ${filtered.length === 0 ? '<tr><td colspan="9" class="py-20 md:py-24 text-center text-slate-300 font-black tracking-widest uppercase text-xs md:text-sm">暂无订单记录</td></tr>' : ''}
+                                    ${filtered.length === 0 ? '<tr><td colspan="10" class="py-20 md:py-24 text-center text-slate-300 font-black tracking-widest uppercase text-xs md:text-sm">暂无订单记录</td></tr>' : ''}
                                 </tbody>
                                 ${filtered.length > 0 ? `
                                 <tfoot class="bg-slate-50/80 font-black text-slate-900 border-t border-slate-100">
                                     <tr>
-                                        <td colspan="4" class="px-5 py-5 md:px-8 md:py-6 text-right uppercase tracking-[0.3em] text-[10px] text-slate-400">当日小计</td>
-                                        <td class="px-5 py-5 md:px-8 md:py-6 text-right text-lg md:text-xl tracking-tighter">¥ ${filtered.reduce((s,o) => s + Number(o.price), 0).toLocaleString()}</td>
-                                        <td class="px-5 py-5 md:px-8 md:py-6 text-right text-xs md:text-sm text-slate-400">¥ ${filtered.reduce((s,o) => s + Number(o.cost), 0).toLocaleString()}</td>
-                                        <td class="px-5 py-5 md:px-8 md:py-6 text-right text-lg md:text-xl tracking-tighter text-emerald-600">¥ ${filtered.reduce((s,o) => s + (Number(o.price) - Number(o.cost)), 0).toLocaleString()}</td>
+                                        <td colspan="5" class="px-5 py-5 md:px-8 md:py-6 text-right uppercase tracking-[0.3em] text-[10px] text-slate-400">有效单小计</td>
+                                        <td class="px-5 py-5 md:px-8 md:py-6 text-right text-lg md:text-xl tracking-tighter">¥ ${validFiltered.reduce((s,o) => s + Number(o.price), 0).toLocaleString()}</td>
+                                        <td class="px-5 py-5 md:px-8 md:py-6 text-right text-xs md:text-sm text-slate-400">¥ ${validFiltered.reduce((s,o) => s + Number(o.cost), 0).toLocaleString()}</td>
+                                        <td class="px-5 py-5 md:px-8 md:py-6 text-right text-lg md:text-xl tracking-tighter text-emerald-600">¥ ${validFiltered.reduce((s,o) => s + (Number(o.price) - Number(o.cost)), 0).toLocaleString()}</td>
                                         <td colspan="2" class="sticky right-0 bg-slate-50/90 backdrop-blur"></td>
                                     </tr>
                                 </tfoot>
@@ -619,9 +683,12 @@
             const summaryMap = {};
             orders.forEach(o => {
                 if(!summaryMap[o.date]) summaryMap[o.date] = { date: o.date, revenue: 0, profit: 0, count: 0 };
-                summaryMap[o.date].revenue += Number(o.price);
-                summaryMap[o.date].profit += (o.price - o.cost);
-                summaryMap[o.date].count++;
+                // 排除退货
+                if (o.status !== '已退货') {
+                    summaryMap[o.date].revenue += Number(o.price);
+                    summaryMap[o.date].profit += (o.price - o.cost);
+                    summaryMap[o.date].count++;
+                }
             });
             const summaries = Object.values(summaryMap).sort((a,b) => b.date.localeCompare(a.date));
 
@@ -631,7 +698,7 @@
                         <div onclick="gotoDate('${s.date}')" class="glass-card p-6 md:p-10 rounded-[2rem] md:rounded-[3.5rem] cursor-pointer active:scale-[0.98] transition-transform">
                             <div class="bg-slate-100 px-3 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 md:mb-6 w-max">${s.date}</div>
                             <p class="text-3xl md:text-4xl font-black text-slate-800 tracking-tighter mb-2">¥ ${s.revenue.toLocaleString()}</p>
-                            <p class="text-xs md:text-sm font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-lg md:rounded-xl w-max">净利 ¥ ${s.profit.toLocaleString()}</p>
+                            <p class="text-xs md:text-sm font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-lg md:rounded-xl w-max">有效净利 ¥ ${s.profit.toLocaleString()}</p>
                         </div>
                     `).join('')}
                 </div>
@@ -661,11 +728,6 @@
                                         ${gistId ? `<button type="button" onclick="copyGistId()" class="w-full md:w-auto px-6 py-4 bg-indigo-50 text-indigo-600 font-bold rounded-2xl md:rounded-3xl hover:bg-indigo-100 transition-colors whitespace-nowrap text-sm active:scale-95">复制 ID</button>` : ''}
                                     </div>
                                 </div>
-                                <div class="text-[10px] text-indigo-500 leading-relaxed font-bold bg-white p-3 rounded-xl border border-indigo-50">
-                                    💡 <b>多设备同步必看（极为重要）：</b><br>
-                                    1. <b>第一台设备（如电脑）：</b> Gist ID 留空，填入 Token 保存后，系统会自动生成一串 ID。<br>
-                                    2. <b>其他新设备（如手机）：</b> 必须把第一台设备的 Token <b>和上面自动生成的 Gist ID</b> 一起复制过来填上，再点保存！这样所有设备才能连接到同一个数据库。
-                                </div>
                             </div>
                         </section>
 
@@ -684,6 +746,30 @@
                                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Logo (单字/Emoji)</label>
                                         <input id="set-sys-logo" type="text" maxlength="2" value="${sysLogo}" placeholder="👟" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-center text-xl md:text-2xl">
                                     </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 【新增】鞋款库录入系统 -->
+                        <section class="space-y-4 md:space-y-6">
+                            <div class="flex items-center space-x-3 md:space-x-4 text-slate-900">
+                                <span class="text-indigo-600 font-black text-xl">👟</span>
+                                <span class="font-black text-lg md:text-xl tracking-tight">鞋款录入系统</span>
+                            </div>
+                            <div class="bg-slate-50/50 md:bg-slate-50 p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] space-y-4 md:space-y-6">
+                                <div class="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4">
+                                    <input id="set-shoe-name" type="text" placeholder="录入新鞋款型号，如：倒钩3.0" class="flex-1 bg-white px-5 py-4 md:px-8 md:py-4 rounded-2xl md:rounded-3xl border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base">
+                                    <button type="button" onclick="addShoeModel()" class="w-full md:w-auto px-6 py-4 bg-indigo-600 text-white rounded-2xl md:rounded-3xl font-black shadow-lg md:shadow-xl active:scale-95 transition-all text-sm md:text-base">入库</button>
+                                </div>
+                                <div class="flex flex-wrap gap-2 md:gap-4 pt-4 md:pt-6 border-t border-slate-200/60">
+                                    ${shoeList.map(s => `
+                                        <div class="flex items-center bg-white border border-slate-200 px-3 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl shadow-sm">
+                                            <span class="font-bold text-xs md:text-sm text-slate-700 mr-2 md:mr-3">${s}</span>
+                                            <button type="button" onclick="removeShoeModelByName('${s}')" class="p-1 text-slate-300 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 rounded-md transition-colors active:scale-90">
+                                                <svg class="pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                            </button>
+                                        </div>
+                                    `).join('')}
                                 </div>
                             </div>
                         </section>
@@ -753,6 +839,10 @@
             document.getElementById('f-staff').innerHTML = staffOptions;
             document.getElementById('f-auditor').innerHTML = `<option value="">无需对账员</option>` + staffOptions;
             
+            // 下拉调取鞋款录入库
+            const shoeOptions = shoeList.map(s => `<option value="${s}">${s}</option>`).join('');
+            document.getElementById('f-shoe').innerHTML = `<option value="">-- 请选择鞋款型号 --</option>` + shoeOptions;
+            
             editingOrderId = orderId; 
             const titleEl = document.getElementById('modalTitle');
 
@@ -763,6 +853,7 @@
                     document.getElementById('f-staff').value = order.staff || staffList[0];
                     document.getElementById('f-auditor').value = order.auditor || "";
                     document.getElementById('f-shoe').value = order.shoe || "";
+                    document.getElementById('f-color').value = order.color || "";
                     document.getElementById('f-client').value = order.client || "";
                     document.getElementById('f-price').value = order.price || "";
                     document.getElementById('f-cost').value = order.cost || "";
@@ -774,6 +865,7 @@
                 document.getElementById('f-staff').value = staffList[0] || "";
                 document.getElementById('f-auditor').value = "";
                 document.getElementById('f-shoe').value = "";
+                document.getElementById('f-color').value = "";
                 document.getElementById('f-client').value = "";
                 document.getElementById('f-price').value = "";
                 document.getElementById('f-cost').value = "";
@@ -792,6 +884,30 @@
         }
 
         function editOrder(id) { showModal(id); }
+
+        // --- 鞋款库管理 ---
+        function addShoeModel() {
+            const input = document.getElementById('set-shoe-name');
+            const name = input.value.trim();
+            if (!name) return;
+            if (shoeList.includes(name)) { showToast("⚠️ 该鞋款已存在于库中！"); return; }
+            shoeList.push(name);
+            localStorage.setItem('sec_shoes', JSON.stringify(shoeList));
+            input.value = ""; 
+            render();
+            pushToCloud();
+            showToast("✅ 鞋款已自动入库");
+        }
+
+        function removeShoeModelByName(name) {
+            showConfirm("移除鞋款", `确定从鞋库移除 [${name}] 吗？\n不影响历史订单。`, () => {
+                shoeList = shoeList.filter(s => s !== name);
+                localStorage.setItem('sec_shoes', JSON.stringify(shoeList));
+                render();
+                pushToCloud();
+                showToast("🗑️ 鞋款已移除");
+            });
+        }
 
         function addStaff() {
             const input = document.getElementById('set-staff-name');
@@ -834,7 +950,7 @@
                             public: false,
                             files: {
                                 "shoe_store_data.json": {
-                                    content: JSON.stringify({ orders, staffList })
+                                    content: JSON.stringify({ orders, staffList, shoeList })
                                 }
                             }
                         })
@@ -894,8 +1010,7 @@
                 render();
             }
 
-            // 新设备配好凭证后，强制拉取一遍数据
-            if(isCloudEnabled) {
+            if(!wasCloudEnabled && isCloudEnabled) {
                 pullFromCloud(true);
             }
         }
@@ -919,6 +1034,7 @@
 
         function saveOrder() {
             const shoe = document.getElementById('f-shoe').value;
+            const color = document.getElementById('f-color').value;
             const price = document.getElementById('f-price').value;
             const cost = document.getElementById('f-cost').value;
             if(!shoe || !price || !cost) { showToast("⚠️ 请填写完整的款式和价格信息"); return; }
@@ -929,6 +1045,7 @@
                     orders[index].staff = document.getElementById('f-staff').value;
                     orders[index].auditor = document.getElementById('f-auditor').value;
                     orders[index].shoe = shoe;
+                    orders[index].color = color;
                     orders[index].client = document.getElementById('f-client').value;
                     orders[index].tracking = document.getElementById('f-tracking').value;
                     orders[index].remark = document.getElementById('f-remark').value;
@@ -941,10 +1058,11 @@
                     id: newId, date: selectedDate, 
                     staff: document.getElementById('f-staff').value,
                     auditor: document.getElementById('f-auditor').value,
-                    shoe: shoe, client: document.getElementById('f-client').value, 
+                    shoe: shoe, color: color, client: document.getElementById('f-client').value, 
                     tracking: document.getElementById('f-tracking').value,
                     remark: document.getElementById('f-remark').value,
-                    price: Number(price), cost: Number(cost)
+                    price: Number(price), cost: Number(cost),
+                    status: '待发货' // 默认状态
                 });
             }
             
@@ -956,27 +1074,65 @@
         }
 
         function deleteOrder(id) {
-            showConfirm("删除订单", "确定删除这笔记录吗？此操作不可恢复。", () => {
+            showConfirm("删除记录", "确定彻底删除这笔订单记录吗？此操作不可恢复。", () => {
                 orders = orders.filter(o => o.id !== id);
                 localStorage.setItem('sec_orders', JSON.stringify(orders));
                 render();
                 pushToCloud();
-                showToast("🗑️ 订单已删除");
+                showToast("🗑️ 记录已删除");
             });
         }
 
+        // --- 深度定制 Excel 报表导出 ---
         function exportExcel() {
             const filtered = orders.filter(o => o.date === selectedDate);
             if (filtered.length === 0) { showToast("⚠️ 当前日期无订单"); return; }
-            const ws = XLSX.utils.json_to_sheet(filtered);
+            
+            // 1. 数据映射，把最顶层的 key 改为全中文规范格式
+            const exportData = filtered.map(o => ({
+                "系统单号": o.id,
+                "订单日期": o.date,
+                "接待员工": o.staff,
+                "对账人员": o.auditor || '-',
+                "鞋款型号": o.shoe,
+                "颜色规格": o.color || '-',
+                "客户信息": o.client || '-',
+                "成交价(元)": o.price,
+                "进货成本(元)": o.cost,
+                "预估毛利(元)": o.price - o.cost,
+                "订单状态": o.status || '正常',
+                "快递单号": o.tracking || '-',
+                "备注说明": o.remark || '-'
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            
+            // 2. 优化 Excel 的列宽排版，让它导出来不用拉拉扯扯就非常好看
+            const wscols = [
+                {wch: 12}, // 单号
+                {wch: 12}, // 日期
+                {wch: 10}, // 接待
+                {wch: 10}, // 对账
+                {wch: 22}, // 鞋款型号 (放大)
+                {wch: 10}, // 颜色
+                {wch: 15}, // 客户信息
+                {wch: 12}, // 成交价
+                {wch: 12}, // 进货成本
+                {wch: 12}, // 毛利
+                {wch: 10}, // 状态
+                {wch: 20}, // 快递单号
+                {wch: 25}  // 备注说明
+            ];
+            ws['!cols'] = wscols;
+
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "对账单");
-            XLSX.writeFile(wb, `${sysTitle}_${selectedDate}.xlsx`);
-            showToast("✅ 成功导出");
+            XLSX.utils.book_append_sheet(wb, ws, "每日明细表");
+            XLSX.writeFile(wb, `${sysTitle}_${selectedDate}对账明细.xlsx`);
+            showToast("✅ 表格已自动排版并成功导出");
         }
 
         function doExportBackup() {
-            const data = { orders, passwordHash, staffList, sysTitle, sysLogo, exportDate: new Date().toISOString() };
+            const data = { orders, passwordHash, staffList, shoeList, sysTitle, sysLogo, exportDate: new Date().toISOString() };
             const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
@@ -997,12 +1153,14 @@
                             orders = data.orders;
                             passwordHash = data.passwordHash || "";
                             if (data.staffList) staffList = data.staffList;
+                            if (data.shoeList) shoeList = data.shoeList;
                             if (data.sysTitle) sysTitle = data.sysTitle;
                             if (data.sysLogo) sysLogo = data.sysLogo;
                             
                             localStorage.setItem('sec_orders', JSON.stringify(orders));
                             localStorage.setItem('sec_pwd_hash', passwordHash);
                             localStorage.setItem('sec_staff', JSON.stringify(staffList));
+                            localStorage.setItem('sec_shoes', JSON.stringify(shoeList));
                             localStorage.setItem('sec_sys_title', sysTitle);
                             localStorage.setItem('sec_sys_logo', sysLogo);
                             
