@@ -270,6 +270,20 @@
             closeDialog();
         }
 
+        // --- 新增：复制 Gist ID 功能 ---
+        function copyGistId() {
+            const id = document.getElementById('set-gist-id').value;
+            if(id) {
+                const el = document.createElement('textarea');
+                el.value = id;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                showToast("✅ 数据仓 ID 已复制，请通过微信发到手机上填入");
+            }
+        }
+
         function applyBranding() {
             const titleEls = document.querySelectorAll('.dynamic-sys-title');
             titleEls.forEach(el => el.innerText = sysTitle);
@@ -302,7 +316,7 @@
         let selectedDate = new Date().toISOString().split('T')[0];
         let editingOrderId = null;
 
-        // 【更新】使用 GitHub Gist 的配置
+        // 使用 GitHub Gist 的配置
         let githubToken = localStorage.getItem('sec_github_token') || '';
         let gistId = localStorage.getItem('sec_gist_id') || '';
         let isCloudEnabled = (githubToken !== '' && gistId !== '');
@@ -329,7 +343,7 @@
                 document.getElementById('lockScreen').classList.add('hidden');
                 document.getElementById('appWrapper').style.display = 'flex';
                 switchView(currentView);
-                // 解锁成功后，如果有云端配置，自动拉取最新数据
+                // 解锁成功后自动拉取数据
                 if(isCloudEnabled) pullFromCloud(false);
             }
 
@@ -367,20 +381,25 @@
             }
         }
 
-        // ================= 全新云端架构 (基于 GitHub Gist API) =================
+        // ================= 云端架构 (增加防缓存穿透补丁) =================
         async function pullFromCloud(isManual = false) {
             if (!isCloudEnabled) return;
-            if(isManual) showToast("☁️ 正在从 GitHub 极速拉取数据...");
+            if(isManual) showToast("☁️ 正在拉取最新同步数据...");
             try {
-                const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+                // 【补丁】：加上 ?t=时间戳 和 no-cache 请求头，强制浏览器每次向 GitHub 拿最新数据，防止缓存作祟
+                const timestamp = new Date().getTime();
+                const res = await fetch(`https://api.github.com/gists/${gistId}?t=${timestamp}`, {
                     method: 'GET',
                     headers: { 
                         'Accept': 'application/vnd.github.v3+json',
-                        'Authorization': `token ${githubToken}`
+                        'Authorization': `token ${githubToken}`,
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
                     }
                 });
+                
                 if (!res.ok) {
-                    if (isManual) showToast(`⚠️ 拉取失败: 密钥无效或 Gist ID 错误`);
+                    if (isManual) showToast(`⚠️ 拉取失败: 同步凭证错误，请重新配置`);
                     return;
                 }
                 const data = await res.json();
@@ -633,15 +652,19 @@
                             <div class="bg-indigo-50/50 md:bg-indigo-50 p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] space-y-4 md:space-y-6 border border-indigo-100">
                                 <div class="space-y-2">
                                     <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">云端状态: ${isCloudEnabled ? '<span class="text-emerald-500">已连接 (自动同步开)</span>' : '<span class="text-slate-400">未连接 (仅存本地)</span>'}</label>
-                                    <input id="set-github-token" type="text" value="${githubToken}" placeholder="输入 GitHub Classic Token (必填)" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700">
+                                    <input id="set-github-token" type="text" value="${githubToken}" placeholder="输入 GitHub Token (所有设备必须一致)" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700">
                                 </div>
                                 <div class="space-y-2">
-                                    <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">数据仓库 (Gist ID)</label>
-                                    <input id="set-gist-id" type="text" value="${gistId}" placeholder="留空则系统将为您全自动建仓！" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700 font-mono">
+                                    <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">数据仓库 (Gist ID) - 多设备同步凭证</label>
+                                    <div class="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-2">
+                                        <input id="set-gist-id" type="text" value="${gistId}" placeholder="首台设备留空，其他设备需粘贴填入此ID！" class="flex-1 bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700 font-mono">
+                                        ${gistId ? `<button type="button" onclick="copyGistId()" class="w-full md:w-auto px-6 py-4 bg-indigo-50 text-indigo-600 font-bold rounded-2xl md:rounded-3xl hover:bg-indigo-100 transition-colors whitespace-nowrap text-sm active:scale-95">复制 ID</button>` : ''}
+                                    </div>
                                 </div>
                                 <div class="text-[10px] text-indigo-500 leading-relaxed font-bold bg-white p-3 rounded-xl border border-indigo-50">
-                                    💡 <b>防拦截终极方案：</b> 请前往 GitHub -> Settings -> Developer settings -> Personal access tokens (classic) -> Generate new token (勾选 <b>gist</b> 权限)。<br>
-                                    将生成的以 <b>ghp_</b> 开头的 Token 填入上方，Gist ID 留空保存，系统会自动为您建仓！
+                                    💡 <b>多设备同步必看（极为重要）：</b><br>
+                                    1. <b>第一台设备（如电脑）：</b> Gist ID 留空，填入 Token 保存后，系统会自动生成一串 ID。<br>
+                                    2. <b>其他新设备（如手机）：</b> 必须把第一台设备的 Token <b>和上面自动生成的 Gist ID</b> 一起复制过来填上，再点保存！这样所有设备才能连接到同一个数据库。
                                 </div>
                             </div>
                         </section>
@@ -794,11 +817,9 @@
         }
 
         async function saveSettings() {
-            // 获取 GitHub 配置
             githubToken = document.getElementById('set-github-token').value.trim();
             gistId = document.getElementById('set-gist-id').value.trim();
             
-            // 全自动建仓逻辑 (POST 到 GitHub API)
             if (githubToken !== '' && gistId === '') {
                 showToast("☁️ 正在通过 GitHub 为您自动创建云端专属数据仓...");
                 try {
@@ -827,10 +848,10 @@
                     
                     const data = await res.json();
                     if (data.id) {
-                        gistId = data.id; // 获取生成的 Gist ID
+                        gistId = data.id; 
                         const gistInput = document.getElementById('set-gist-id');
                         if(gistInput) gistInput.value = gistId;
-                        showToast("✅ GitHub 云端仓全自动创建成功！");
+                        showToast("✅ GitHub 云端仓全自动创建成功！请复制ID发给别的设备。");
                     } else {
                         showToast("⚠️ 自动创建失败，返回数据异常");
                         return;
@@ -873,7 +894,8 @@
                 render();
             }
 
-            if(!wasCloudEnabled && isCloudEnabled) {
+            // 新设备配好凭证后，强制拉取一遍数据
+            if(isCloudEnabled) {
                 pullFromCloud(true);
             }
         }
