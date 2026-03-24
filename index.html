@@ -54,6 +54,7 @@
             </div>
         </div>
     </div>
+    
     <div id="lockScreen" class="fixed inset-0 z-[9999] bg-slate-950 flex items-center justify-center overflow-hidden">
         <div class="absolute top-[-10%] left-[-20%] w-[400px] h-[400px] md:w-[600px] md:h-[600px] bg-indigo-600/30 rounded-full blur-[100px] md:blur-[120px]"></div>
         <div class="relative z-10 w-full max-w-md p-8 md:p-12 text-center">
@@ -72,7 +73,7 @@
                 <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl text-2xl dynamic-sys-logo">👟</div>
                 <div class="leading-tight">
                     <span class="text-xl font-black tracking-tighter dynamic-sys-title truncate w-40 block">鞋店对账</span>
-                    <p class="text-[10px] text-indigo-500 font-black uppercase tracking-widest mt-0.5">Cloud Sync Pro</p>
+                    <p class="text-[10px] text-indigo-500 font-black uppercase tracking-widest mt-0.5">GitHub Sync Pro</p>
                 </div>
             </div>
 
@@ -161,7 +162,7 @@
             </header>
 
             <main id="mainContent" class="p-4 md:p-10 overflow-y-auto overflow-x-hidden flex-1">
-                </main>
+            </main>
 
             <footer class="w-full py-4 md:py-6 mt-auto text-center text-[10px] md:text-xs font-bold text-slate-400 tracking-wider">
                 <p>jay for meizhiyuan</p>
@@ -301,10 +302,10 @@
         let selectedDate = new Date().toISOString().split('T')[0];
         let editingOrderId = null;
 
-        // 【新增】云端同步配置
-        let cloudApiKey = localStorage.getItem('sec_cloud_api') || '';
-        let cloudBinId = localStorage.getItem('sec_cloud_bin') || '';
-        let isCloudEnabled = (cloudApiKey !== '' && cloudBinId !== '');
+        // 【更新】使用 GitHub Gist 的配置
+        let githubToken = localStorage.getItem('sec_github_token') || '';
+        let gistId = localStorage.getItem('sec_gist_id') || '';
+        let isCloudEnabled = (githubToken !== '' && gistId !== '');
 
         // --- 系统初始化 ---
         async function init() {
@@ -351,7 +352,7 @@
             const syncBtnMobile = document.getElementById('btnManualSyncMobile');
             if(isCloudEnabled) {
                 badge.classList.remove('hidden');
-                badge.innerText = '☁️ 云端同步中';
+                badge.innerText = '☁️ 极速同步中';
                 badge.className = 'text-[9px] bg-emerald-50 text-emerald-500 px-2 py-0.5 rounded-full font-bold ml-2';
                 syncBtnPc.classList.remove('hidden');
                 syncBtnPc.classList.add('md:flex');
@@ -366,31 +367,35 @@
             }
         }
 
-        // ================= 云端核心逻辑 (基于 JSONBin) =================
+        // ================= 全新云端架构 (基于 GitHub Gist API) =================
         async function pullFromCloud(isManual = false) {
             if (!isCloudEnabled) return;
-            if(isManual) showToast("☁️ 正在从云端拉取最新数据...");
+            if(isManual) showToast("☁️ 正在从 GitHub 极速拉取数据...");
             try {
-                const res = await fetch(`https://api.jsonbin.io/v3/b/${cloudBinId}`, {
+                const res = await fetch(`https://api.github.com/gists/${gistId}`, {
                     method: 'GET',
-                    headers: { 'X-Master-Key': cloudApiKey }
+                    headers: { 
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Authorization': `token ${githubToken}`
+                    }
                 });
                 if (!res.ok) {
-                    if (isManual) showToast(`⚠️ 拉取失败: 云端拒绝访问，请检查密钥与Bin ID是否匹配`);
+                    if (isManual) showToast(`⚠️ 拉取失败: 密钥无效或 Gist ID 错误`);
                     return;
                 }
                 const data = await res.json();
-                if (data.record) {
-                    if (data.record.orders) orders = data.record.orders;
-                    if (data.record.staffList) staffList = data.record.staffList;
+                if (data.files && data.files["shoe_store_data.json"]) {
+                    const content = JSON.parse(data.files["shoe_store_data.json"].content);
+                    if (content.orders) orders = content.orders;
+                    if (content.staffList) staffList = content.staffList;
                     localStorage.setItem('sec_orders', JSON.stringify(orders));
                     localStorage.setItem('sec_staff', JSON.stringify(staffList));
                     render();
                     if(isManual) showToast("✅ 云端数据同步完成！");
                 }
             } catch (e) {
-                console.error("Pull Sync Error:", e);
-                if(isManual) showToast("⚠️ 网络异常或被浏览器插件拦截，无法拉取数据");
+                console.error("GitHub Pull Error:", e);
+                if(isManual) showToast("⚠️ 网络异常，无法拉取数据");
             }
         }
 
@@ -398,19 +403,25 @@
             if (!isCloudEnabled) return;
             try {
                 document.getElementById('cloudStatusBadge').innerText = '☁️ 保存至云端...';
-                const res = await fetch(`https://api.jsonbin.io/v3/b/${cloudBinId}`, {
-                    method: 'PUT',
+                const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+                    method: 'PATCH',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': cloudApiKey
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Authorization': `token ${githubToken}`
                     },
-                    body: JSON.stringify({ orders, staffList })
+                    body: JSON.stringify({
+                        files: {
+                            "shoe_store_data.json": {
+                                content: JSON.stringify({ orders, staffList })
+                            }
+                        }
+                    })
                 });
                 if (!res.ok) throw new Error("API responded with " + res.status);
                 document.getElementById('cloudStatusBadge').innerText = '☁️ 云端已同步';
             } catch (e) {
-                console.error("Push Sync Error:", e);
-                showToast("⚠️ 云端请求被拦截或失败，数据已安全保存在本地");
+                console.error("GitHub Push Error:", e);
+                showToast("⚠️ 云端请求失败，数据已安全保存在本地");
                 document.getElementById('cloudStatusBadge').innerText = '⚠️ 云端断开';
             }
         }
@@ -617,18 +628,21 @@
                         <section class="space-y-4 md:space-y-6">
                             <div class="flex items-center space-x-3 md:space-x-4 text-slate-900">
                                 <span class="text-indigo-600 font-black text-xl">☁️</span>
-                                <span class="font-black text-lg md:text-xl tracking-tight">云端同步数据库</span>
+                                <span class="font-black text-lg md:text-xl tracking-tight">GitHub 极速云同步</span>
                             </div>
                             <div class="bg-indigo-50/50 md:bg-indigo-50 p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] space-y-4 md:space-y-6 border border-indigo-100">
                                 <div class="space-y-2">
                                     <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">云端状态: ${isCloudEnabled ? '<span class="text-emerald-500">已连接 (自动同步开)</span>' : '<span class="text-slate-400">未连接 (仅存本地)</span>'}</label>
-                                    <input id="set-cloud-api" type="text" value="${cloudApiKey}" placeholder="输入 JSONBin API 密钥 (Master Key 以 $2a$ 开头)" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700">
+                                    <input id="set-github-token" type="text" value="${githubToken}" placeholder="输入 GitHub Classic Token (必填)" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700">
                                 </div>
                                 <div class="space-y-2">
-                                    <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">数据仓库 (Bin ID)</label>
-                                    <input id="set-cloud-bin" type="text" value="${cloudBinId}" placeholder="留空则系统将为您全自动建仓！" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700 font-mono">
+                                    <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">数据仓库 (Gist ID)</label>
+                                    <input id="set-gist-id" type="text" value="${gistId}" placeholder="留空则系统将为您全自动建仓！" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700 font-mono">
                                 </div>
-                                <p class="text-[10px] text-indigo-400 leading-relaxed font-bold">💡 绝赞升级：只需在 JSONBin 获取并填入 Master Key (主密钥)，Bin ID 完全留空并点击底部保存，系统将为您全自动创建专属数据仓！</p>
+                                <div class="text-[10px] text-indigo-500 leading-relaxed font-bold bg-white p-3 rounded-xl border border-indigo-50">
+                                    💡 <b>防拦截终极方案：</b> 请前往 GitHub -> Settings -> Developer settings -> Personal access tokens (classic) -> Generate new token (勾选 <b>gist</b> 权限)。<br>
+                                    将生成的以 <b>ghp_</b> 开头的 Token 填入上方，Gist ID 留空保存，系统会自动为您建仓！
+                                </div>
                             </div>
                         </section>
 
@@ -765,7 +779,7 @@
             localStorage.setItem('sec_staff', JSON.stringify(staffList));
             input.value = ""; 
             render();
-            pushToCloud(); // 触发云同步
+            pushToCloud();
             showToast("✅ 员工添加成功");
         }
 
@@ -774,60 +788,65 @@
                 staffList = staffList.filter(s => s !== name);
                 localStorage.setItem('sec_staff', JSON.stringify(staffList));
                 render();
-                pushToCloud(); // 触发云同步
+                pushToCloud();
                 showToast("🗑️ 员工已删除");
             });
         }
 
         async function saveSettings() {
-            // 获取云端配置输入
-            cloudApiKey = document.getElementById('set-cloud-api').value.trim();
-            cloudBinId = document.getElementById('set-cloud-bin').value.trim();
+            // 获取 GitHub 配置
+            githubToken = document.getElementById('set-github-token').value.trim();
+            gistId = document.getElementById('set-gist-id').value.trim();
             
-            // 【增强修复】：绝赞的自动化建仓功能！带完善的错误捕捉
-            if (cloudApiKey !== '' && cloudBinId === '') {
-                showToast("☁️ 正在为您自动创建云端专属数据仓...");
+            // 全自动建仓逻辑 (POST 到 GitHub API)
+            if (githubToken !== '' && gistId === '') {
+                showToast("☁️ 正在通过 GitHub 为您自动创建云端专属数据仓...");
                 try {
-                    const res = await fetch('https://api.jsonbin.io/v3/b', {
+                    const res = await fetch('https://api.github.com/gists', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'X-Master-Key': cloudApiKey,
-                            'X-Bin-Name': '校园鞋店系统备份' // 给新建的 Bin 命个名
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Authorization': `token ${githubToken}`
                         },
-                        body: JSON.stringify({ orders, staffList })
+                        body: JSON.stringify({
+                            description: "校园鞋店系统云端备份 (请勿删除)",
+                            public: false,
+                            files: {
+                                "shoe_store_data.json": {
+                                    content: JSON.stringify({ orders, staffList })
+                                }
+                            }
+                        })
                     });
                     
                     if (!res.ok) {
                         const errData = await res.json().catch(() => ({}));
-                        console.error("JSONBin API 返回错误:", errData);
-                        showToast(`⚠️ 云端拒绝访问: ${errData.message || '请确认填入的是合法的 Master Key'}`);
-                        return; // 终止后续的保存
+                        showToast(`⚠️ GitHub 拒绝访问: 请确认 Token 勾选了 gist 权限`);
+                        return;
                     }
                     
                     const data = await res.json();
-                    if (data.metadata && data.metadata.id) {
-                        cloudBinId = data.metadata.id; // 自动获得生成的 Bin ID
-                        const binInput = document.getElementById('set-cloud-bin');
-                        if(binInput) binInput.value = cloudBinId;
-                        showToast("✅ 云端仓全自动创建成功！");
+                    if (data.id) {
+                        gistId = data.id; // 获取生成的 Gist ID
+                        const gistInput = document.getElementById('set-gist-id');
+                        if(gistInput) gistInput.value = gistId;
+                        showToast("✅ GitHub 云端仓全自动创建成功！");
                     } else {
                         showToast("⚠️ 自动创建失败，返回数据异常");
                         return;
                     }
                 } catch (e) {
-                    console.error("网络请求被拦截或异常:", e);
-                    showToast("⚠️ 网络连接被拦截！1.请检查密钥格式（通常$2a$开头）。2.请关闭浏览器的广告/追踪拦截插件。");
+                    console.error("GitHub API Error:", e);
+                    showToast("⚠️ 网络连接异常。");
                     return; 
                 }
             }
 
-            // 将最终的配置保存到本地
-            localStorage.setItem('sec_cloud_api', cloudApiKey);
-            localStorage.setItem('sec_cloud_bin', cloudBinId);
+            localStorage.setItem('sec_github_token', githubToken);
+            localStorage.setItem('sec_gist_id', gistId);
             
             const wasCloudEnabled = isCloudEnabled;
-            isCloudEnabled = (cloudApiKey !== '' && cloudBinId !== '');
+            isCloudEnabled = (githubToken !== '' && gistId !== '');
             checkCloudUI();
 
             sysTitle = document.getElementById('set-sys-title').value.trim() || '鞋店系统';
@@ -854,7 +873,6 @@
                 render();
             }
 
-            // 如果是刚配置好云端，自动拉取一次测试连通性
             if(!wasCloudEnabled && isCloudEnabled) {
                 pullFromCloud(true);
             }
@@ -911,7 +929,7 @@
             localStorage.setItem('sec_orders', JSON.stringify(orders));
             closeModal(); 
             render();
-            pushToCloud(); // 触发云同步
+            pushToCloud(); 
             showToast(editingOrderId ? "✏️ 订单修改已保存" : "📦 新订单已入库");
         }
 
@@ -920,7 +938,7 @@
                 orders = orders.filter(o => o.id !== id);
                 localStorage.setItem('sec_orders', JSON.stringify(orders));
                 render();
-                pushToCloud(); // 触发云同步
+                pushToCloud();
                 showToast("🗑️ 订单已删除");
             });
         }
@@ -966,7 +984,7 @@
                             localStorage.setItem('sec_sys_title', sysTitle);
                             localStorage.setItem('sec_sys_logo', sysLogo);
                             
-                            pushToCloud(); // 将导入的本地数据直接覆盖到云端
+                            pushToCloud();
                             showToast("✅ 数据已恢复，重载系统...");
                             setTimeout(() => location.reload(), 1000);
                         });
