@@ -615,13 +615,13 @@
                             <div class="bg-indigo-50/50 md:bg-indigo-50 p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] space-y-4 md:space-y-6 border border-indigo-100">
                                 <div class="space-y-2">
                                     <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">云端状态: ${isCloudEnabled ? '<span class="text-emerald-500">已连接 (自动同步开)</span>' : '<span class="text-slate-400">未连接 (仅存本地)</span>'}</label>
-                                    <input id="set-cloud-api" type="text" value="${cloudApiKey}" placeholder="输入云端 API 密钥 (留空关闭云同步)" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700">
+                                    <input id="set-cloud-api" type="text" value="${cloudApiKey}" placeholder="输入 JSONBin 的 API 密钥 (必填)" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700">
                                 </div>
                                 <div class="space-y-2">
                                     <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">数据仓库 (Bin ID)</label>
-                                    <input id="set-cloud-bin" type="text" value="${cloudBinId}" placeholder="输入数据容器 Bin ID" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700 font-mono">
+                                    <input id="set-cloud-bin" type="text" value="${cloudBinId}" placeholder="留空则系统将为您全自动建仓！" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700 font-mono">
                                 </div>
-                                <p class="text-[10px] text-indigo-400 leading-relaxed font-bold">接入 JSONBin 后，所有订单与员工数据将会在操作时自动同步至云端。员工在手机上的操作，老板在寝室也能实时看到。</p>
+                                <p class="text-[10px] text-indigo-400 leading-relaxed font-bold">💡 绝赞升级：只需在 JSONBin 获取并填入 API 密钥，Bin ID 完全留空并点击底部保存，系统将为您全自动创建专属数据仓！告别手动配置的繁琐。</p>
                             </div>
                         </section>
 
@@ -773,9 +773,41 @@
         }
 
         async function saveSettings() {
-            // 保存云端配置
+            // 获取云端配置输入
             cloudApiKey = document.getElementById('set-cloud-api').value.trim();
             cloudBinId = document.getElementById('set-cloud-bin').value.trim();
+            
+            // 【新增】绝赞的自动化建仓功能！
+            if (cloudApiKey !== '' && cloudBinId === '') {
+                showToast("☁️ 正在为您自动创建云端专属数据仓...");
+                try {
+                    const res = await fetch('https://api.jsonbin.io/v3/b', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': cloudApiKey,
+                            'X-Bin-Name': '校园鞋店系统备份' // 给新建的 Bin 命个名
+                        },
+                        body: JSON.stringify({ orders, staffList })
+                    });
+                    const data = await res.json();
+                    if (data.metadata && data.metadata.id) {
+                        cloudBinId = data.metadata.id; // 自动获得生成的 Bin ID
+                        // 把它填回到界面的输入框里
+                        const binInput = document.getElementById('set-cloud-bin');
+                        if(binInput) binInput.value = cloudBinId;
+                        showToast("✅ 云端仓全自动创建成功！");
+                    } else {
+                        showToast("⚠️ 自动创建失败，请确保您输入的 API 密钥正确");
+                        return; // 终止后续的保存
+                    }
+                } catch (e) {
+                    showToast("⚠️ 网络连接错误，无法连接到云端服务器");
+                    return; 
+                }
+            }
+
+            // 无论如何，将最终的配置保存到本地
             localStorage.setItem('sec_cloud_api', cloudApiKey);
             localStorage.setItem('sec_cloud_bin', cloudBinId);
             
@@ -803,11 +835,11 @@
                     render(); 
                 });
             } else {
-                showToast("✅ 配置已保存！");
+                showToast("✅ 偏好配置已保存！");
                 render();
             }
 
-            // 如果刚填入了云端配置，自动触发一次云同步
+            // 如果是刚配置好云端，自动拉取一次测试连通性
             if(!wasCloudEnabled && isCloudEnabled) {
                 pullFromCloud(true);
             }
