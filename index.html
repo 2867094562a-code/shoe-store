@@ -314,7 +314,6 @@
         let savedStaff = JSON.parse(localStorage.getItem('sec_staff'));
         let staffList = (savedStaff && savedStaff.length > 0) ? savedStaff : ['老板'];
         
-        // 新增鞋款库状态管理
         let savedShoes = JSON.parse(localStorage.getItem('sec_shoes'));
         let shoeList = (savedShoes && savedShoes.length > 0) ? savedShoes : ['空军一号', '熊猫Dunk', '经典老爹鞋', '马丁靴'];
 
@@ -519,12 +518,10 @@
 
         function renderDashboard(c) {
             const today = new Date().toISOString().split('T')[0];
-            // 只计算正常订单的流水和利润
             const todayOrders = orders.filter(o => o.date === today && o.status !== '已退货');
             const revenue = todayOrders.reduce((s,o) => s + Number(o.price), 0);
             const profit = todayOrders.reduce((s,o) => s + (Number(o.price) - Number(o.cost)), 0);
 
-            // 计算所有历史订单中的爆款退货率
             const shoeStats = {};
             orders.forEach(o => {
                 if(!shoeStats[o.shoe]) shoeStats[o.shoe] = { total: 0, returned: 0 };
@@ -556,7 +553,6 @@
                         </div>
                     </div>
 
-                    <!-- 爆款退货率风控模块 -->
                     <div class="glass-card p-6 md:p-10 rounded-[2rem] md:rounded-[3.5rem] mt-8 border-t-4 border-rose-400">
                         <h4 class="font-black text-xl mb-6 text-slate-800 flex items-center"><span class="text-2xl mr-2">🚨</span> SKU 爆款退货率风控预警</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
@@ -589,23 +585,70 @@
             });
         }
 
+        function undoReturn(id) {
+            showConfirm("撤销退货", "确定要撤销退货状态，恢复为正常订单吗？", () => {
+                const index = orders.findIndex(o => o.id === id);
+                if (index !== -1) {
+                    orders[index].status = '待发货'; 
+                    localStorage.setItem('sec_orders', JSON.stringify(orders));
+                    render();
+                    pushToCloud();
+                    showToast("✅ 订单已恢复正常状态");
+                }
+            });
+        }
+
+        function updateSelectedDate(val) { 
+            selectedDate = val; 
+            render(); 
+        }
+
         function renderOrders(c) {
             const filtered = orders.filter(o => o.date === selectedDate);
             const swipeHint = isMobile ? `<div class="text-center text-[10px] text-indigo-400 font-bold mb-3 animate-pulse">👉 左右滑动表格查看完整对账信息</div>` : '';
-
-            // 计算该界面的统计时也应排除退货
             const validFiltered = filtered.filter(o => o.status !== '已退货');
+
+            const dateStats = {};
+            orders.forEach(o => {
+                if (!dateStats[o.date]) dateStats[o.date] = { hasSales: false, hasReturns: false };
+                if (o.status === '已退货') dateStats[o.date].hasReturns = true;
+                else dateStats[o.date].hasSales = true;
+            });
+            const activeDates = Object.keys(dateStats).sort((a, b) => b.localeCompare(a));
+            
+            const datePills = activeDates.map(date => {
+                const stat = dateStats[date];
+                const isSelected = date === selectedDate;
+                let dots = '';
+                if (stat.hasSales) dots += `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-1"></span>`;
+                if (stat.hasReturns) dots += `<span class="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block mr-1"></span>`;
+
+                return `<button onclick="updateSelectedDate('${date}')" class="flex-shrink-0 flex items-center px-3 py-1.5 rounded-xl border ${isSelected ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-bold' : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'} text-xs transition-all shadow-sm">
+                    ${dots}
+                    ${date}
+                </button>`;
+            }).join('');
+
+            const quickNavHtml = activeDates.length > 0 ? `
+                <div class="flex overflow-x-auto space-x-2 pb-2 pt-3 items-center w-full" style="-webkit-overflow-scrolling: touch;">
+                    <div class="text-[10px] text-slate-400 font-bold mr-1 whitespace-nowrap">📅 记录:</div>
+                    ${datePills}
+                </div>
+            ` : '';
 
             c.innerHTML = `
                 <div class="space-y-5 md:space-y-8 page-enter">
-                    <div class="flex justify-between items-center bg-white/60 p-2 md:p-0 rounded-3xl md:bg-transparent">
-                        <input type="date" value="${selectedDate}" onchange="updateSelectedDate(this.value)" class="px-4 py-3 md:px-6 md:py-4 bg-white/80 border-none md:border border-white rounded-2xl md:rounded-3xl font-black text-xs md:text-sm outline-none focus:ring-4 focus:ring-indigo-500/10 shadow-sm flex-1 md:flex-none">
-                        <div class="flex space-x-2 md:space-x-4 ml-3 md:ml-0">
-                            <button onclick="exportExcel()" class="flex items-center justify-center bg-indigo-50 md:bg-white px-4 py-3 md:px-6 md:py-4 rounded-2xl md:rounded-3xl text-xs font-black text-indigo-600 md:text-slate-600 shadow-sm active:scale-95">
-                                <svg class="md:hidden mr-1" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                                <span>导出<span class="hidden md:inline"> EXCEL</span></span>
-                            </button>
+                    <div class="flex flex-col bg-white/60 p-3 md:p-0 rounded-3xl md:bg-transparent">
+                        <div class="flex justify-between items-center w-full">
+                            <input type="date" value="${selectedDate}" onchange="updateSelectedDate(this.value)" class="px-4 py-3 md:px-6 md:py-4 bg-white/80 border-none md:border border-white rounded-2xl md:rounded-3xl font-black text-xs md:text-sm outline-none focus:ring-4 focus:ring-indigo-500/10 shadow-sm flex-1 md:flex-none">
+                            <div class="flex space-x-2 md:space-x-4 ml-3 md:ml-0">
+                                <button onclick="exportExcel()" class="flex items-center justify-center bg-indigo-50 md:bg-white px-4 py-3 md:px-6 md:py-4 rounded-2xl md:rounded-3xl text-xs font-black text-indigo-600 md:text-slate-600 shadow-sm active:scale-95">
+                                    <svg class="md:hidden mr-1" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                                    <span>导出<span class="hidden md:inline"> EXCEL</span></span>
+                                </button>
+                            </div>
                         </div>
+                        ${quickNavHtml}
                     </div>
                     ${swipeHint}
                     <div class="glass-card rounded-[2rem] md:rounded-[3.5rem] overflow-hidden border border-white/50 shadow-sm">
@@ -649,7 +692,10 @@
                                                 <div class="flex flex-col items-center justify-center space-y-2 transition-all">
                                                     ${o.status === '已退货' 
                                                         ? `<span class="bg-rose-100 text-rose-600 px-3 py-1 rounded-xl text-[10px] font-black">已退货</span>
-                                                           <button onclick="deleteOrder('${o.id}')" class="text-rose-400 p-1 hover:bg-rose-50 rounded-lg text-xs transition-all">删除记录</button>` 
+                                                           <div class="flex items-center space-x-1 mt-1">
+                                                               <button onclick="undoReturn('${o.id}')" class="text-emerald-500 p-1 hover:bg-emerald-50 rounded-lg text-xs transition-all">撤销</button>
+                                                               <button onclick="deleteOrder('${o.id}')" class="text-rose-400 p-1 hover:bg-rose-50 rounded-lg text-xs transition-all">删除</button>
+                                                           </div>` 
                                                         : `<div class="flex items-center space-x-1">
                                                                <button onclick="editOrder('${o.id}')" class="text-indigo-500 bg-indigo-50 md:bg-transparent p-2 rounded-xl text-xs md:text-sm active:scale-90 transition-all">修改</button>
                                                                <button onclick="processReturn('${o.id}')" class="text-rose-500 bg-rose-50 md:bg-transparent p-2 rounded-xl text-xs md:text-sm active:scale-90 transition-all">退货</button>
@@ -679,15 +725,21 @@
             `;
         }
 
+        function gotoDate(val) { 
+            selectedDate = val; 
+            switchView('orders'); 
+        }
+
         function renderRecords(c) {
             const summaryMap = {};
             orders.forEach(o => {
-                if(!summaryMap[o.date]) summaryMap[o.date] = { date: o.date, revenue: 0, profit: 0, count: 0 };
-                // 排除退货
+                if(!summaryMap[o.date]) summaryMap[o.date] = { date: o.date, revenue: 0, profit: 0, count: 0, returnCount: 0 };
                 if (o.status !== '已退货') {
                     summaryMap[o.date].revenue += Number(o.price);
                     summaryMap[o.date].profit += (o.price - o.cost);
                     summaryMap[o.date].count++;
+                } else {
+                    summaryMap[o.date].returnCount++;
                 }
             });
             const summaries = Object.values(summaryMap).sort((a,b) => b.date.localeCompare(a.date));
@@ -696,7 +748,10 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8 page-enter">
                     ${summaries.map(s => `
                         <div onclick="gotoDate('${s.date}')" class="glass-card p-6 md:p-10 rounded-[2rem] md:rounded-[3.5rem] cursor-pointer active:scale-[0.98] transition-transform">
-                            <div class="bg-slate-100 px-3 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 md:mb-6 w-max">${s.date}</div>
+                            <div class="flex items-center space-x-2 mb-4 md:mb-6">
+                                <div class="bg-slate-100 px-3 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl text-[10px] font-black text-slate-500 uppercase tracking-widest w-max">${s.date}</div>
+                                ${s.returnCount > 0 ? `<div class="bg-rose-100 text-rose-500 px-2 py-1 rounded-xl text-[10px] font-black flex items-center"><span class="w-1.5 h-1.5 bg-rose-500 rounded-full mr-1"></span>退货 x${s.returnCount}</div>` : ''}
+                            </div>
                             <p class="text-3xl md:text-4xl font-black text-slate-800 tracking-tighter mb-2">¥ ${s.revenue.toLocaleString()}</p>
                             <p class="text-xs md:text-sm font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-lg md:rounded-xl w-max">有效净利 ¥ ${s.profit.toLocaleString()}</p>
                         </div>
@@ -705,12 +760,91 @@
             `;
         }
 
+        // --- 数据瘦身归档功能 ---
+        function archiveOldOrders() {
+            const days = parseInt(document.getElementById('archive-days').value, 10);
+            showConfirm("历史数据归档与瘦身", `确定要将 ${days} 天前的所有历史订单导出为 Excel，并从系统中彻底清除吗？\n\n此操作能极大提升系统加载速度！`, () => {
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - days);
+                const cutoffStr = cutoffDate.toISOString().split('T')[0];
+
+                const oldOrders = orders.filter(o => o.date < cutoffStr);
+                const newHotOrders = orders.filter(o => o.date >= cutoffStr);
+
+                if (oldOrders.length === 0) {
+                    showToast(`⚠️ 系统中没有 ${days} 天前的旧订单，无需归档。`);
+                    return;
+                }
+
+                // 1. 导出为 Excel
+                const exportData = oldOrders.map(o => ({
+                    "系统单号": o.id,
+                    "订单日期": o.date,
+                    "接待员工": o.staff,
+                    "对账人员": o.auditor || '-',
+                    "鞋款型号": o.shoe,
+                    "颜色规格": o.color || '-',
+                    "客户信息": o.client || '-',
+                    "成交价(元)": o.price,
+                    "进货成本(元)": o.cost,
+                    "预估毛利(元)": o.price - o.cost,
+                    "订单状态": o.status || '正常',
+                    "快递单号": o.tracking || '-',
+                    "备注说明": o.remark || '-'
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wscols = [
+                    {wch: 12}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 22}, 
+                    {wch: 10}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 12}, 
+                    {wch: 10}, {wch: 20}, {wch: 25}
+                ];
+                ws['!cols'] = wscols;
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "历史归档订单");
+                XLSX.writeFile(wb, `${sysTitle}_${days}天前历史归档_${new Date().toLocaleDateString()}.xlsx`);
+
+                // 2. 清理并同步云端
+                orders = newHotOrders;
+                localStorage.setItem('sec_orders', JSON.stringify(orders));
+                render();
+                pushToCloud();
+
+                showToast(`✅ 成功归档并清理了 ${oldOrders.length} 笔历史订单，系统已提速！`);
+            });
+        }
+
         function renderSettings(c) {
             c.innerHTML = `
                 <div class="max-w-2xl mx-auto space-y-8 md:space-y-10 page-enter">
                     <div class="glass-card p-6 md:p-12 rounded-[2rem] md:rounded-[4rem] space-y-8 md:space-y-10">
                         <h3 class="text-2xl md:text-3xl font-black tracking-tighter">系统偏好设置</h3>
                         
+                        <!-- 【新增】系统性能与瘦身模块 -->
+                        <section class="space-y-4 md:space-y-6">
+                            <div class="flex items-center space-x-3 md:space-x-4 text-slate-900">
+                                <span class="text-indigo-600 font-black text-xl">🚀</span>
+                                <span class="font-black text-lg md:text-xl tracking-tight">系统性能与数据瘦身</span>
+                            </div>
+                            <div class="bg-slate-50/50 md:bg-slate-50 p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] space-y-4 md:space-y-6">
+                                <div class="text-[10px] text-indigo-500 leading-relaxed font-bold bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                                    💡 <b>冷热数据分离：</b> 当积累上万笔订单时，系统会变卡。建议每月执行一次“归档”，系统会自动将几十天前的老订单导出为 Excel 永久保存，并从云端中安全清除，让系统永远保持极速秒开！
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <select id="archive-days" class="w-full bg-white px-5 py-4 md:px-8 md:py-4 rounded-2xl md:rounded-3xl border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base">
+                                        <option value="30">归档 30 天前的订单</option>
+                                        <option value="60" selected>归档 60 天前的订单</option>
+                                        <option value="90">归档 90 天前的订单</option>
+                                        <option value="180">归档 半年 前的订单</option>
+                                    </select>
+                                    <button type="button" onclick="archiveOldOrders()" class="w-full py-4 md:py-4 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl md:rounded-3xl font-black shadow-sm active:scale-95 transition-all text-sm md:text-base border border-rose-100">
+                                        一键归档并提速
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+
                         <section class="space-y-4 md:space-y-6">
                             <div class="flex items-center space-x-3 md:space-x-4 text-slate-900">
                                 <span class="text-indigo-600 font-black text-xl">☁️</span>
@@ -750,7 +884,6 @@
                             </div>
                         </section>
 
-                        <!-- 【新增】鞋款库录入系统 -->
                         <section class="space-y-4 md:space-y-6">
                             <div class="flex items-center space-x-3 md:space-x-4 text-slate-900">
                                 <span class="text-indigo-600 font-black text-xl">👟</span>
@@ -839,7 +972,6 @@
             document.getElementById('f-staff').innerHTML = staffOptions;
             document.getElementById('f-auditor').innerHTML = `<option value="">无需对账员</option>` + staffOptions;
             
-            // 下拉调取鞋款录入库
             const shoeOptions = shoeList.map(s => `<option value="${s}">${s}</option>`).join('');
             document.getElementById('f-shoe').innerHTML = `<option value="">-- 请选择鞋款型号 --</option>` + shoeOptions;
             
@@ -885,7 +1017,6 @@
 
         function editOrder(id) { showModal(id); }
 
-        // --- 鞋款库管理 ---
         function addShoeModel() {
             const input = document.getElementById('set-shoe-name');
             const name = input.value.trim();
@@ -1062,7 +1193,7 @@
                     tracking: document.getElementById('f-tracking').value,
                     remark: document.getElementById('f-remark').value,
                     price: Number(price), cost: Number(cost),
-                    status: '待发货' // 默认状态
+                    status: '待发货'
                 });
             }
             
@@ -1083,12 +1214,10 @@
             });
         }
 
-        // --- 深度定制 Excel 报表导出 ---
         function exportExcel() {
             const filtered = orders.filter(o => o.date === selectedDate);
             if (filtered.length === 0) { showToast("⚠️ 当前日期无订单"); return; }
             
-            // 1. 数据映射，把最顶层的 key 改为全中文规范格式
             const exportData = filtered.map(o => ({
                 "系统单号": o.id,
                 "订单日期": o.date,
@@ -1107,21 +1236,10 @@
 
             const ws = XLSX.utils.json_to_sheet(exportData);
             
-            // 2. 优化 Excel 的列宽排版，让它导出来不用拉拉扯扯就非常好看
             const wscols = [
-                {wch: 12}, // 单号
-                {wch: 12}, // 日期
-                {wch: 10}, // 接待
-                {wch: 10}, // 对账
-                {wch: 22}, // 鞋款型号 (放大)
-                {wch: 10}, // 颜色
-                {wch: 15}, // 客户信息
-                {wch: 12}, // 成交价
-                {wch: 12}, // 进货成本
-                {wch: 12}, // 毛利
-                {wch: 10}, // 状态
-                {wch: 20}, // 快递单号
-                {wch: 25}  // 备注说明
+                {wch: 12}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 22}, 
+                {wch: 10}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 12}, 
+                {wch: 10}, {wch: 20}, {wch: 25}
             ];
             ws['!cols'] = wscols;
 
