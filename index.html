@@ -390,24 +390,30 @@
             }
         }
 
-        // ================= 云端架构 =================
+        // ================= 修复版：云端架构 (解决手机端拦截与空格问题) =================
         async function pullFromCloud(isManual = false) {
             if (!isCloudEnabled) return;
             if(isManual) showToast("☁️ 正在拉取最新同步数据...");
+            
+            // 强力净化复制粘贴带来的多余空格和换行符
+            const cleanToken = githubToken.replace(/\s/g, '').trim();
+            const cleanGistId = gistId.replace(/\s/g, '').trim();
+            
             try {
                 const timestamp = new Date().getTime();
-                const res = await fetch(`https://api.github.com/gists/${gistId}?t=${timestamp}`, {
+                // 移除 Cache-Control 等容易触发微信/手机浏览器严格跨域拦截的自定义头
+                // 仅保留基础权限认证，利用 t=timestamp 破解缓存
+                const res = await fetch(`https://api.github.com/gists/${cleanGistId}?t=${timestamp}`, {
                     method: 'GET',
                     headers: { 
                         'Accept': 'application/vnd.github.v3+json',
-                        'Authorization': `token ${githubToken}`,
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache'
+                        'Authorization': `token ${cleanToken}`
                     }
                 });
                 
                 if (!res.ok) {
-                    if (isManual) showToast(`⚠️ 拉取失败: 同步凭证错误，请重新配置`);
+                    const errInfo = await res.json().catch(()=>({}));
+                    if (isManual) showToast(`⚠️ 拉取失败: [${res.status}] ${errInfo.message || '凭证无效或已被删除'}`);
                     return;
                 }
                 const data = await res.json();
@@ -424,19 +430,23 @@
                 }
             } catch (e) {
                 console.error("GitHub Pull Error:", e);
-                if(isManual) showToast("⚠️ 网络异常，无法拉取数据");
+                if(isManual) showToast(`⚠️ 网络拦截异常: ${e.message}`);
             }
         }
 
         async function pushToCloud() {
             if (!isCloudEnabled) return;
+            
+            const cleanToken = githubToken.replace(/\s/g, '').trim();
+            const cleanGistId = gistId.replace(/\s/g, '').trim();
+            
             try {
                 document.getElementById('cloudStatusBadge').innerText = '☁️ 保存至云端...';
-                const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+                const res = await fetch(`https://api.github.com/gists/${cleanGistId}`, {
                     method: 'PATCH',
                     headers: {
                         'Accept': 'application/vnd.github.v3+json',
-                        'Authorization': `token ${githubToken}`
+                        'Authorization': `token ${cleanToken}`
                     },
                     body: JSON.stringify({
                         files: {
@@ -450,7 +460,7 @@
                 document.getElementById('cloudStatusBadge').innerText = '☁️ 云端已同步';
             } catch (e) {
                 console.error("GitHub Push Error:", e);
-                showToast("⚠️ 云端请求失败，数据已安全保存在本地");
+                showToast("⚠️ 云端请求被拦截，数据已安全保存在本地");
                 document.getElementById('cloudStatusBadge').innerText = '⚠️ 云端断开';
             }
         }
@@ -884,6 +894,7 @@
                             </div>
                         </section>
 
+                        <!-- 【新增】鞋款库录入系统 -->
                         <section class="space-y-4 md:space-y-6">
                             <div class="flex items-center space-x-3 md:space-x-4 text-slate-900">
                                 <span class="text-indigo-600 font-black text-xl">👟</span>
@@ -1064,9 +1075,11 @@
         }
 
         async function saveSettings() {
-            githubToken = document.getElementById('set-github-token').value.trim();
-            gistId = document.getElementById('set-gist-id').value.trim();
+            // 获取值并强制清除所有看不见的空格和换行符，避免微信复制粘贴造成的致命错误
+            githubToken = document.getElementById('set-github-token').value.replace(/\s/g, '').trim();
+            gistId = document.getElementById('set-gist-id').value.replace(/\s/g, '').trim();
             
+            // 全自动建仓逻辑 (POST 到 GitHub API)
             if (githubToken !== '' && gistId === '') {
                 showToast("☁️ 正在通过 GitHub 为您自动创建云端专属数据仓...");
                 try {
@@ -1095,7 +1108,7 @@
                     
                     const data = await res.json();
                     if (data.id) {
-                        gistId = data.id; 
+                        gistId = data.id; // 获取生成的 Gist ID
                         const gistInput = document.getElementById('set-gist-id');
                         if(gistInput) gistInput.value = gistId;
                         showToast("✅ GitHub 云端仓全自动创建成功！请复制ID发给别的设备。");
@@ -1105,7 +1118,7 @@
                     }
                 } catch (e) {
                     console.error("GitHub API Error:", e);
-                    showToast("⚠️ 网络连接异常。");
+                    showToast(`⚠️ 网络连接异常: ${e.message}`);
                     return; 
                 }
             }
@@ -1141,7 +1154,8 @@
                 render();
             }
 
-            if(!wasCloudEnabled && isCloudEnabled) {
+            // 新设备配好凭证后，强制拉取一遍数据
+            if(isCloudEnabled) {
                 pullFromCloud(true);
             }
         }
