@@ -250,6 +250,25 @@
         
         let activeConfirmCallback = null;
 
+        // --- 安全转义函数 ---
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return String(unsafe)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // --- 本地时区日期函数 ---
+        function getLocalDateStr(dateObj = new Date()) {
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
         function showToast(msg) {
             const toast = document.getElementById('customToast');
             toast.innerText = msg;
@@ -323,6 +342,7 @@
         let savedInventory = JSON.parse(localStorage.getItem('sec_inventory'));
         let inventoryList = savedInventory || [];
 
+        // 旧版无库存系统的兼容升级逻辑
         let oldShoeList = JSON.parse(localStorage.getItem('sec_shoes'));
         if (inventoryList.length === 0 && oldShoeList && oldShoeList.length > 0) {
             inventoryList = oldShoeList.map((name, index) => ({
@@ -349,7 +369,7 @@
         let passwordHash = localStorage.getItem('sec_pwd_hash') || ""; 
         let isUnlocked = (passwordHash === ""); 
         let currentView = 'dashboard';
-        let selectedDate = new Date().toISOString().split('T')[0];
+        let selectedDate = getLocalDateStr(); // 修复跨时区Bug
         let editingOrderId = null;
 
         let githubToken = localStorage.getItem('sec_github_token') || '';
@@ -444,11 +464,16 @@
                     if (content.orders) orders = content.orders;
                     if (content.staffList) staffList = content.staffList;
                     
+                    // 兼容处理老旧的备份数据
                     if (content.inventoryList) {
                         inventoryList = content.inventoryList;
                         shoeList = inventoryList.map(item => item.name);
                     } else if (content.shoeList) { 
                         shoeList = content.shoeList;
+                        inventoryList = shoeList.map((name, index) => ({
+                            id: 'INV' + Date.now() + index,
+                            name: name, stock: 0, cost: 0, price: 0
+                        }));
                     }
                     
                     localStorage.setItem('sec_orders', JSON.stringify(orders));
@@ -557,7 +582,7 @@
         }
 
         function renderDashboard(c) {
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalDateStr();
             const todayOrders = orders.filter(o => o.date === today && o.status !== '已退货');
             const revenue = todayOrders.reduce((s,o) => s + Number(o.price), 0);
             const profit = todayOrders.reduce((s,o) => s + (Number(o.price) - Number(o.cost)), 0);
@@ -598,7 +623,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                             ${returnRates.length > 0 ? returnRates.map(r => `
                                 <div class="bg-slate-50 p-5 rounded-2xl border ${r.rate >= 20 ? 'border-rose-200 bg-rose-50' : 'border-slate-100'}">
-                                    <div class="text-xs font-bold text-slate-500 mb-1 truncate" title="${r.shoe}">${r.shoe}</div>
+                                    <div class="text-xs font-bold text-slate-500 mb-1 truncate" title="${escapeHtml(r.shoe)}">${escapeHtml(r.shoe)}</div>
                                     <div class="flex items-end justify-between">
                                         <div class="text-2xl font-black ${r.rate >= 20 ? 'text-rose-600' : 'text-slate-800'}">${r.rate}%</div>
                                         <div class="text-[10px] font-bold text-slate-400 mb-1">总单量: ${r.total}</div>
@@ -642,6 +667,8 @@
             selectedDate = val; 
             render(); 
         }
+
+        window.updateSelectedDate = updateSelectedDate; // 确保内联事件能访问
 
         function renderOrders(c) {
             const filtered = orders.filter(o => o.date === selectedDate);
@@ -714,19 +741,19 @@
                                             <td class="px-5 py-4 md:px-8 md:py-6 text-slate-400 font-mono text-[10px]">#${o.id}</td>
                                             <td class="px-5 py-4 md:px-8 md:py-6">
                                                 <div class="flex flex-col space-y-1">
-                                                    <span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-lg text-[9px] font-black w-max">接: ${o.staff || '-'}</span>
-                                                    <span class="bg-amber-50 text-amber-600 px-2 py-0.5 rounded-lg text-[9px] font-black w-max">账: ${o.auditor || '-'}</span>
+                                                    <span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-lg text-[9px] font-black w-max">接: ${escapeHtml(o.staff) || '-'}</span>
+                                                    <span class="bg-amber-50 text-amber-600 px-2 py-0.5 rounded-lg text-[9px] font-black w-max">账: ${escapeHtml(o.auditor) || '-'}</span>
                                                 </div>
                                             </td>
-                                            <td class="px-5 py-4 md:px-8 md:py-6 tracking-tight text-sm">${o.shoe}</td>
-                                            <td class="px-5 py-4 md:px-8 md:py-6 text-slate-500 text-xs">${o.color || '-'}</td>
-                                            <td class="px-5 py-4 md:px-8 md:py-6 text-slate-500 text-xs">${o.client || '-'}</td>
+                                            <td class="px-5 py-4 md:px-8 md:py-6 tracking-tight text-sm">${escapeHtml(o.shoe)}</td>
+                                            <td class="px-5 py-4 md:px-8 md:py-6 text-slate-500 text-xs">${escapeHtml(o.color) || '-'}</td>
+                                            <td class="px-5 py-4 md:px-8 md:py-6 text-slate-500 text-xs">${escapeHtml(o.client) || '-'}</td>
                                             <td class="px-5 py-4 md:px-8 md:py-6 text-right text-indigo-600 text-base ${o.status === '已退货' ? 'line-through' : ''}">¥ ${o.price}</td>
                                             <td class="px-5 py-4 md:px-8 md:py-6 text-right text-slate-300 text-sm">¥ ${o.cost}</td>
                                             <td class="px-5 py-4 md:px-8 md:py-6 text-right text-emerald-600 text-base ${o.status === '已退货' ? 'line-through text-rose-500' : ''}">¥ ${o.price - o.cost}</td>
                                             <td class="px-5 py-4 md:px-8 md:py-6">
-                                                <div class="text-indigo-400 text-[10px] font-mono mb-1">${o.tracking || '-'}</div>
-                                                <div class="text-slate-400 text-[10px] max-w-[120px] truncate" title="${o.remark || ''}">${o.remark || '-'}</div>
+                                                <div class="text-indigo-400 text-[10px] font-mono mb-1">${escapeHtml(o.tracking) || '-'}</div>
+                                                <div class="text-slate-400 text-[10px] max-w-[120px] truncate" title="${escapeHtml(o.remark) || ''}">${escapeHtml(o.remark) || '-'}</div>
                                             </td>
                                             <td class="px-5 py-4 md:px-8 md:py-6 text-center sticky right-0 bg-white/90 backdrop-blur border-l border-slate-50">
                                                 <div class="flex flex-col items-center justify-center space-y-2 transition-all">
@@ -765,7 +792,7 @@
             `;
         }
 
-        // ================= 【更新】商品库存管理系统 (支持实时修改) =================
+        // ================= 【库存系统】 =================
         function addInventoryItem() {
             const name = document.getElementById('set-shoe-name').value.trim();
             const stock = parseInt(document.getElementById('set-shoe-stock').value) || 0;
@@ -797,7 +824,7 @@
 
         function deleteInventoryItem(id) {
             const item = inventoryList.find(i => i.id === id);
-            showConfirm("下架鞋款", `确定从库存中彻底移除 [${item?.name}] 吗？\n下架后开单将无法选择此鞋款，但不影响历史订单。`, () => {
+            showConfirm("下架鞋款", `确定从库存中彻底移除 [${escapeHtml(item?.name)}] 吗？\n下架后开单将无法选择此鞋款，但不影响历史订单。`, () => {
                 inventoryList = inventoryList.filter(i => i.id !== id);
                 shoeList = inventoryList.map(item => item.name);
                 localStorage.setItem('sec_inventory', JSON.stringify(inventoryList));
@@ -824,7 +851,6 @@
                 
                 localStorage.setItem('sec_inventory', JSON.stringify(inventoryList));
                 
-                // 更新顶部统计数据，不重绘整个表格以保持输入焦点
                 const totalStock = inventoryList.reduce((sum, item) => sum + (item.stock || 0), 0);
                 const stockDisplay = document.getElementById('inv-total-stock');
                 if (stockDisplay) stockDisplay.innerText = totalStock;
@@ -833,6 +859,7 @@
                 showToast("💾 修改已自动保存");
             }
         }
+        window.updateInventoryItem = updateInventoryItem;
 
         function renderInventory(c) {
             const totalModels = inventoryList.length;
@@ -885,7 +912,7 @@
                                             <td class="px-4 py-4 text-slate-800 text-base tracking-tight">
                                                 <div class="flex items-center">
                                                     <div class="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center mr-3 text-xs flex-shrink-0">👟</div>
-                                                    <input type="text" value="${item.name}" onchange="updateInventoryItem('${item.id}', 'name', this.value)" class="w-full bg-transparent font-bold outline-none border-b border-dashed border-transparent hover:border-slate-300 focus:border-indigo-500 py-1 transition-colors" placeholder="鞋款名称">
+                                                    <input type="text" value="${escapeHtml(item.name)}" onchange="updateInventoryItem('${item.id}', 'name', this.value)" class="w-full bg-transparent font-bold outline-none border-b border-dashed border-transparent hover:border-slate-300 focus:border-indigo-500 py-1 transition-colors" placeholder="鞋款名称">
                                                 </div>
                                             </td>
                                             <td class="px-4 py-4 text-center">
@@ -926,6 +953,8 @@
             switchView('orders'); 
         }
 
+        window.gotoDate = gotoDate;
+
         function renderRecords(c) {
             const summaryMap = {};
             orders.forEach(o => {
@@ -961,7 +990,7 @@
             showConfirm("历史数据归档与瘦身", `确定要将 ${days} 天前的所有历史订单导出为 Excel，并从系统中彻底清除吗？\n\n此操作能极大提升系统加载速度！`, () => {
                 const cutoffDate = new Date();
                 cutoffDate.setDate(cutoffDate.getDate() - days);
-                const cutoffStr = cutoffDate.toISOString().split('T')[0];
+                const cutoffStr = getLocalDateStr(cutoffDate);
 
                 const oldOrders = orders.filter(o => o.date < cutoffStr);
                 const newHotOrders = orders.filter(o => o.date >= cutoffStr);
@@ -984,7 +1013,7 @@
 
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "历史归档订单");
-                XLSX.writeFile(wb, `${sysTitle}_${days}天前历史归档_${new Date().toLocaleDateString()}.xlsx`);
+                XLSX.writeFile(wb, `${sysTitle}_${days}天前历史归档_${getLocalDateStr()}.xlsx`);
 
                 orders = newHotOrders;
                 localStorage.setItem('sec_orders', JSON.stringify(orders));
@@ -1032,12 +1061,12 @@
                             <div class="bg-indigo-50/50 md:bg-indigo-50 p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] space-y-4 md:space-y-6 border border-indigo-100">
                                 <div class="space-y-2">
                                     <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">云端状态: ${isCloudEnabled ? '<span class="text-emerald-500">已连接 (自动同步开)</span>' : '<span class="text-slate-400">未连接 (仅存本地)</span>'}</label>
-                                    <input id="set-github-token" type="text" value="${githubToken}" placeholder="输入 GitHub Token (所有设备必须一致)" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700">
+                                    <input id="set-github-token" type="text" value="${escapeHtml(githubToken)}" placeholder="输入 GitHub Token (所有设备必须一致)" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700">
                                 </div>
                                 <div class="space-y-2">
                                     <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">数据仓库 (Gist ID) - 多设备同步凭证</label>
                                     <div class="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-2">
-                                        <input id="set-gist-id" type="text" value="${gistId}" placeholder="首台设备留空，其他设备需粘贴填入此ID！" class="flex-1 bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700 font-mono">
+                                        <input id="set-gist-id" type="text" value="${escapeHtml(gistId)}" placeholder="首台设备留空，其他设备需粘贴填入此ID！" class="flex-1 bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-indigo-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base text-indigo-700 font-mono">
                                         ${gistId ? `<button type="button" onclick="copyGistId()" class="w-full md:w-auto px-6 py-4 bg-indigo-50 text-indigo-600 font-bold rounded-2xl md:rounded-3xl hover:bg-indigo-100 transition-colors whitespace-nowrap text-sm active:scale-95">复制 ID</button>` : ''}
                                     </div>
                                 </div>
@@ -1053,11 +1082,11 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                     <div class="space-y-2">
                                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">系统名称</label>
-                                        <input id="set-sys-title" type="text" value="${sysTitle}" placeholder="如：我的鞋店系统" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base">
+                                        <input id="set-sys-title" type="text" value="${escapeHtml(sysTitle)}" placeholder="如：我的鞋店系统" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base">
                                     </div>
                                     <div class="space-y-2">
                                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Logo (单字/Emoji)</label>
-                                        <input id="set-sys-logo" type="text" maxlength="2" value="${sysLogo}" placeholder="👟" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-center text-xl md:text-2xl">
+                                        <input id="set-sys-logo" type="text" maxlength="2" value="${escapeHtml(sysLogo)}" placeholder="👟" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-center text-xl md:text-2xl">
                                     </div>
                                 </div>
                             </div>
@@ -1076,8 +1105,8 @@
                                 <div class="flex flex-wrap gap-2 md:gap-4 pt-4 md:pt-6 border-t border-slate-200/60">
                                     ${staffList.map(s => `
                                         <div class="flex items-center bg-white border border-slate-200 px-3 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl shadow-sm">
-                                            <span class="font-bold text-xs md:text-sm text-slate-700 mr-2 md:mr-3">${s}</span>
-                                            <button type="button" onclick="removeStaffByName('${s}')" class="p-1 text-slate-300 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 rounded-md transition-colors active:scale-90">
+                                            <span class="font-bold text-xs md:text-sm text-slate-700 mr-2 md:mr-3">${escapeHtml(s)}</span>
+                                            <button type="button" onclick="removeStaffByName('${escapeHtml(s)}')" class="p-1 text-slate-300 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 rounded-md transition-colors active:scale-90">
                                                 <svg class="pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                                             </button>
                                         </div>
@@ -1124,11 +1153,11 @@
         }
 
         function showModal(orderId = null) { 
-            const staffOptions = staffList.map(s => `<option value="${s}">${s}</option>`).join('');
+            const staffOptions = staffList.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
             document.getElementById('f-staff').innerHTML = staffOptions;
             document.getElementById('f-auditor').innerHTML = `<option value="">无需对账员</option>` + staffOptions;
             
-            const shoeOptions = shoeList.map(s => `<option value="${s}">${s}</option>`).join('');
+            const shoeOptions = shoeList.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
             document.getElementById('f-shoe').innerHTML = `<option value="">-- 请下拉选择库存鞋款 --</option>` + shoeOptions;
             
             editingOrderId = orderId; 
@@ -1143,8 +1172,8 @@
                     document.getElementById('f-shoe').value = order.shoe || "";
                     document.getElementById('f-color').value = order.color || "";
                     document.getElementById('f-client').value = order.client || "";
-                    document.getElementById('f-price').value = order.price || "";
-                    document.getElementById('f-cost').value = order.cost || "";
+                    document.getElementById('f-price').value = order.price !== undefined ? order.price : "";
+                    document.getElementById('f-cost').value = order.cost !== undefined ? order.cost : "";
                     document.getElementById('f-tracking').value = order.tracking || "";
                     document.getElementById('f-remark').value = order.remark || "";
                 }
@@ -1176,34 +1205,12 @@
         function handleShoeSelection(shoeName) {
             const selectedShoe = inventoryList.find(item => item.name === shoeName);
             if (selectedShoe) {
-                if (selectedShoe.price > 0) document.getElementById('f-price').value = selectedShoe.price;
-                if (selectedShoe.cost > 0) document.getElementById('f-cost').value = selectedShoe.cost;
+                if (selectedShoe.price !== undefined && selectedShoe.price !== "") document.getElementById('f-price').value = selectedShoe.price;
+                if (selectedShoe.cost !== undefined && selectedShoe.cost !== "") document.getElementById('f-cost').value = selectedShoe.cost;
                 showToast("⚡ 价格已自动带出，可按需修改售价！");
             }
         }
-
-        function addShoeModel() {
-            const input = document.getElementById('set-shoe-name');
-            const name = input.value.trim();
-            if (!name) return;
-            if (shoeList.includes(name)) { showToast("⚠️ 该鞋款已存在于库中！"); return; }
-            shoeList.push(name);
-            localStorage.setItem('sec_shoes', JSON.stringify(shoeList));
-            input.value = ""; 
-            render();
-            pushToCloud();
-            showToast("✅ 鞋款已自动入库");
-        }
-
-        function removeShoeModelByName(name) {
-            showConfirm("移除鞋款", `确定从鞋库移除 [${name}] 吗？\n不影响历史订单。`, () => {
-                shoeList = shoeList.filter(s => s !== name);
-                localStorage.setItem('sec_shoes', JSON.stringify(shoeList));
-                render();
-                pushToCloud();
-                showToast("🗑️ 鞋款已移除");
-            });
-        }
+        window.handleShoeSelection = handleShoeSelection;
 
         function addStaff() {
             const input = document.getElementById('set-staff-name');
@@ -1333,7 +1340,12 @@
             const color = document.getElementById('f-color').value;
             const price = document.getElementById('f-price').value;
             const cost = document.getElementById('f-cost').value;
-            if(!shoe || !price || !cost) { showToast("⚠️ 请下拉选择鞋款并填写完整的价格信息"); return; }
+            
+            // 修复0元单被拦截的bug
+            if(!shoe || price === "" || cost === "") { 
+                showToast("⚠️ 请下拉选择鞋款并填写完整的价格信息"); 
+                return; 
+            }
             
             if (editingOrderId) {
                 const index = orders.findIndex(o => o.id === editingOrderId);
@@ -1413,7 +1425,7 @@
             const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `${sysTitle}_离线备份_${new Date().toLocaleDateString()}.json`;
+            a.download = `${sysTitle}_离线备份_${getLocalDateStr()}.json`;
             a.click();
             showToast("💾 离线备份导出成功");
         }
@@ -1430,12 +1442,19 @@
                             orders = data.orders;
                             passwordHash = data.passwordHash || "";
                             if (data.staffList) staffList = data.staffList;
+                            
+                            // 强大的向下兼容处理
                             if (data.inventoryList) {
                                 inventoryList = data.inventoryList;
                                 shoeList = inventoryList.map(item => item.name);
                             } else if (data.shoeList) {
                                 shoeList = data.shoeList;
+                                inventoryList = shoeList.map((name, index) => ({
+                                    id: 'INV' + Date.now() + index,
+                                    name: name, stock: 0, cost: 0, price: 0
+                                }));
                             }
+                            
                             if (data.sysTitle) sysTitle = data.sysTitle;
                             if (data.sysLogo) sysLogo = data.sysLogo;
                             
