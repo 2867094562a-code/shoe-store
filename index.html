@@ -90,6 +90,11 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
                     <span class="font-bold text-sm tracking-tight">历史汇总</span>
                 </button>
+                <!-- 【新增】PC端库存系统导航 -->
+                <button onclick="switchView('inventory')" id="pc-btn-inventory" class="nav-btn-pc w-full flex items-center space-x-3 px-5 py-4 rounded-2xl transition-all duration-300 text-slate-500 hover:bg-white/60">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    <span class="font-bold text-sm tracking-tight">库存系统</span>
+                </button>
                 <button onclick="switchView('settings')" id="pc-btn-settings" class="nav-btn-pc w-full flex items-center space-x-3 px-5 py-4 rounded-2xl transition-all duration-300 text-slate-500 hover:bg-white/60">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
                     <span class="font-bold text-sm tracking-tight">系统设置</span>
@@ -104,6 +109,7 @@
             </div>
         </aside>
 
+        <!-- 移动端 底部导航 -->
         <nav class="md:hidden fixed bottom-0 left-0 w-full glass-card border-t border-slate-200/50 flex justify-around items-center pt-2 pb-safe z-40 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
             <button onclick="switchView('dashboard')" id="m-btn-dashboard" class="nav-btn-m flex-1 flex flex-col items-center py-2 text-slate-400 active-nav-mobile">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
@@ -118,13 +124,14 @@
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                 </button>
             </div>
+            <!-- 【新增】移动端库存导航 -->
+            <button onclick="switchView('inventory')" id="m-btn-inventory" class="nav-btn-m flex-1 flex flex-col items-center py-2 text-slate-400 transition-all">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                <span class="text-[10px] mt-1 font-bold">库存</span>
+            </button>
             <button onclick="switchView('records')" id="m-btn-records" class="nav-btn-m flex-1 flex flex-col items-center py-2 text-slate-400 transition-all">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
                 <span class="text-[10px] mt-1 font-bold">历史</span>
-            </button>
-            <button onclick="switchView('settings')" id="m-btn-settings" class="nav-btn-m flex-1 flex flex-col items-center py-2 text-slate-400 transition-all">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                <span class="text-[10px] mt-1 font-bold">设置</span>
             </button>
         </nav>
 
@@ -154,8 +161,8 @@
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                         <span>记一笔</span>
                     </button>
-                    <button onclick="lockSystem()" class="md:hidden w-8 h-8 flex items-center justify-center text-rose-500 bg-rose-50 rounded-lg active:scale-90 transition-all">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V5a5 5 0 0 1 9.9-1"/></svg>
+                    <button onclick="switchView('settings')" class="md:hidden w-8 h-8 flex items-center justify-center text-slate-500 bg-slate-100 rounded-lg active:scale-90 transition-all">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
                     <div class="hidden md:flex w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-xl border-2 border-white items-center justify-center text-white font-black text-2xl dynamic-sys-logo">👟</div>
                 </div>
@@ -173,6 +180,7 @@
         </div>
     </div>
 
+    <!-- 记一笔 弹窗 -->
     <div id="addModal" class="fixed inset-0 z-[500] bg-slate-900/60 backdrop-blur-md items-end md:items-center justify-center p-0 md:p-8 hidden">
         <div class="bg-white w-full md:max-w-2xl rounded-t-[2.5rem] md:rounded-[4rem] p-6 md:p-12 shadow-2xl space-y-6 md:space-y-10 border-t md:border border-white max-h-[90vh] overflow-y-auto page-enter pb-safe">
             <div class="flex justify-between items-start sticky top-0 bg-white z-10 pb-2">
@@ -198,8 +206,9 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                     <div class="space-y-1.5 md:space-y-2">
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">鞋款型号</label>
-                        <select id="f-shoe" class="w-full bg-slate-50 px-4 py-3.5 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border-none outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-sm md:text-lg"></select>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">鞋款型号 (自动带出价格)</label>
+                        <!-- 【更新】添加 onchange 事件实现价格联动 -->
+                        <select id="f-shoe" onchange="handleShoeSelection(this.value)" class="w-full bg-slate-50 px-4 py-3.5 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border-none outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-sm md:text-lg"></select>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-1.5 md:space-y-2">
@@ -314,8 +323,30 @@
         let savedStaff = JSON.parse(localStorage.getItem('sec_staff'));
         let staffList = (savedStaff && savedStaff.length > 0) ? savedStaff : ['老板'];
         
-        let savedShoes = JSON.parse(localStorage.getItem('sec_shoes'));
-        let shoeList = (savedShoes && savedShoes.length > 0) ? savedShoes : ['空军一号', '熊猫Dunk', '经典老爹鞋', '马丁靴'];
+        // 【新增】强大的结构化库存与鞋款字典
+        let savedInventory = JSON.parse(localStorage.getItem('sec_inventory'));
+        let inventoryList = savedInventory || [];
+
+        // 兼容老版本：如果用户之前存过单纯的 shoeList 字符串数组，平滑升级为库存对象结构
+        let oldShoeList = JSON.parse(localStorage.getItem('sec_shoes'));
+        if (inventoryList.length === 0 && oldShoeList && oldShoeList.length > 0) {
+            inventoryList = oldShoeList.map((name, index) => ({
+                id: 'INV' + Date.now() + index,
+                name: name,
+                stock: 0,
+                cost: 0,
+                price: 0
+            }));
+            localStorage.setItem('sec_inventory', JSON.stringify(inventoryList));
+        } else if (inventoryList.length === 0) {
+            inventoryList = [
+                { id: 'INV1', name: '空军一号', stock: 2, cost: 85, price: 168 },
+                { id: 'INV2', name: '熊猫Dunk', stock: 1, cost: 95, price: 188 }
+            ];
+        }
+
+        // 动态生成开单时的鞋款下拉列表
+        let shoeList = inventoryList.map(item => item.name);
 
         let orders = JSON.parse(localStorage.getItem('sec_orders')) || [
             { id: '26032301', date: '2026-03-23', staff: '老板', auditor: '老板', client: '张三', shoe: '空军一号', color: '纯白', price: 168, cost: 85, tracking: 'SF12345678', remark: '首单内测送袜', status: '已发货' }
@@ -390,19 +421,16 @@
             }
         }
 
-        // ================= 修复版：云端架构 (解决手机端拦截与空格问题) =================
+        // ================= 云端架构 =================
         async function pullFromCloud(isManual = false) {
             if (!isCloudEnabled) return;
             if(isManual) showToast("☁️ 正在拉取最新同步数据...");
             
-            // 强力净化复制粘贴带来的多余空格和换行符
             const cleanToken = githubToken.replace(/\s/g, '').trim();
             const cleanGistId = gistId.replace(/\s/g, '').trim();
             
             try {
                 const timestamp = new Date().getTime();
-                // 移除 Cache-Control 等容易触发微信/手机浏览器严格跨域拦截的自定义头
-                // 仅保留基础权限认证，利用 t=timestamp 破解缓存
                 const res = await fetch(`https://api.github.com/gists/${cleanGistId}?t=${timestamp}`, {
                     method: 'GET',
                     headers: { 
@@ -421,10 +449,18 @@
                     const content = JSON.parse(data.files["shoe_store_data.json"].content);
                     if (content.orders) orders = content.orders;
                     if (content.staffList) staffList = content.staffList;
-                    if (content.shoeList) shoeList = content.shoeList;
+                    
+                    // 同步处理库存库
+                    if (content.inventoryList) {
+                        inventoryList = content.inventoryList;
+                        shoeList = inventoryList.map(item => item.name);
+                    } else if (content.shoeList) { // 兼容旧版云端数据
+                        shoeList = content.shoeList;
+                    }
+                    
                     localStorage.setItem('sec_orders', JSON.stringify(orders));
                     localStorage.setItem('sec_staff', JSON.stringify(staffList));
-                    localStorage.setItem('sec_shoes', JSON.stringify(shoeList));
+                    localStorage.setItem('sec_inventory', JSON.stringify(inventoryList));
                     render();
                     if(isManual) showToast("✅ 云端数据同步完成！");
                 }
@@ -451,7 +487,7 @@
                     body: JSON.stringify({
                         files: {
                             "shoe_store_data.json": {
-                                content: JSON.stringify({ orders, staffList, shoeList })
+                                content: JSON.stringify({ orders, staffList, inventoryList })
                             }
                         }
                     })
@@ -522,6 +558,7 @@
             container.innerHTML = "";
             if (currentView === 'dashboard') renderDashboard(container);
             else if (currentView === 'orders') renderOrders(container);
+            else if (currentView === 'inventory') renderInventory(container); // 新增库存视图
             else if (currentView === 'records') renderRecords(container);
             else if (currentView === 'settings') renderSettings(container);
         }
@@ -735,6 +772,121 @@
             `;
         }
 
+        // ================= 【新增】商品库存管理系统 =================
+        function addInventoryItem() {
+            const name = document.getElementById('set-shoe-name').value.trim();
+            const stock = parseInt(document.getElementById('set-shoe-stock').value) || 0;
+            const cost = parseFloat(document.getElementById('set-shoe-cost').value) || 0;
+            const price = parseFloat(document.getElementById('set-shoe-price').value) || 0;
+
+            if (!name) return showToast("⚠️ 鞋款名称不能为空！");
+            if (inventoryList.some(item => item.name === name)) return showToast("⚠️ 该鞋款已存在于库中！");
+
+            const newItem = {
+                id: 'INV' + Date.now(),
+                name, stock, cost, price
+            };
+            
+            inventoryList.push(newItem);
+            shoeList = inventoryList.map(item => item.name); // 更新下拉列表
+            
+            localStorage.setItem('sec_inventory', JSON.stringify(inventoryList));
+            
+            document.getElementById('set-shoe-name').value = "";
+            document.getElementById('set-shoe-stock').value = "";
+            document.getElementById('set-shoe-cost').value = "";
+            document.getElementById('set-shoe-price').value = "";
+            
+            render();
+            pushToCloud();
+            showToast("✅ 鞋款已成功入库！");
+        }
+
+        function deleteInventoryItem(id) {
+            const item = inventoryList.find(i => i.id === id);
+            showConfirm("下架鞋款", `确定从库存中彻底移除 [${item?.name}] 吗？\n下架后开单将无法选择此鞋款，但不影响历史订单。`, () => {
+                inventoryList = inventoryList.filter(i => i.id !== id);
+                shoeList = inventoryList.map(item => item.name); // 更新下拉列表
+                localStorage.setItem('sec_inventory', JSON.stringify(inventoryList));
+                render();
+                pushToCloud();
+                showToast("🗑️ 鞋款已成功下架");
+            });
+        }
+
+        function renderInventory(c) {
+            const totalModels = inventoryList.length;
+            const totalStock = inventoryList.reduce((sum, item) => sum + (item.stock || 0), 0);
+            
+            c.innerHTML = `
+                <div class="space-y-6 md:space-y-8 page-enter">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+                        <div class="bg-indigo-600 p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] text-white shadow-xl shadow-indigo-200">
+                            <p class="text-indigo-100 text-[10px] font-black uppercase tracking-widest mb-2">在架 SKU 总数</p>
+                            <h3 class="text-4xl md:text-5xl font-black tracking-tighter">${totalModels} <span class="text-lg font-bold text-indigo-300">款</span></h3>
+                        </div>
+                        <div class="glass-card p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] border border-white">
+                            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">样鞋总库存</p>
+                            <h3 class="text-4xl md:text-5xl font-black tracking-tighter text-slate-800">${totalStock} <span class="text-lg font-bold text-slate-400">双</span></h3>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-sm border border-white">
+                        <h4 class="font-black text-xl mb-6 text-slate-800 flex items-center">
+                            <svg class="mr-2 text-indigo-600" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                            新品入库
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <input id="set-shoe-name" type="text" placeholder="鞋款名称 (必填)" class="w-full bg-slate-50 px-5 py-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm">
+                            <input id="set-shoe-stock" type="number" placeholder="样鞋库存 (双)" class="w-full bg-slate-50 px-5 py-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm">
+                            <input id="set-shoe-cost" type="number" placeholder="默认进价 (¥)" class="w-full bg-slate-50 px-5 py-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm">
+                            <input id="set-shoe-price" type="number" placeholder="默认售价 (¥)" class="w-full bg-slate-50 px-5 py-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm">
+                        </div>
+                        <button onclick="addInventoryItem()" class="mt-4 w-full md:w-auto px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-100 active:scale-95 transition-all text-sm">
+                            添加至商品库
+                        </button>
+                        <p class="text-[10px] font-bold text-emerald-500 mt-4">💡 绝赞升级：在此处填好进价和售价，下次在【记一笔】开单时，系统将为您全自动带出价格，实现秒级开单！</p>
+                    </div>
+
+                    <div class="glass-card rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-sm border border-white">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm min-w-[800px]">
+                                <thead class="bg-slate-50/80 text-slate-400 font-black uppercase tracking-widest text-[10px] border-b border-slate-100">
+                                    <tr>
+                                        <th class="px-6 py-5">鞋款型号</th>
+                                        <th class="px-6 py-5 text-center">样鞋库存</th>
+                                        <th class="px-6 py-5 text-right">默认底价</th>
+                                        <th class="px-6 py-5 text-right">默认售价</th>
+                                        <th class="px-6 py-5 text-center">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="font-bold divide-y divide-slate-50">
+                                    ${inventoryList.map(item => `
+                                        <tr class="hover:bg-slate-50/50 transition-colors group">
+                                            <td class="px-6 py-4 text-slate-800 text-base tracking-tight flex items-center">
+                                                <div class="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center mr-3 text-xs">👟</div>
+                                                ${item.name}
+                                            </td>
+                                            <td class="px-6 py-4 text-center">
+                                                <span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-xl text-xs">${item.stock || 0} 双</span>
+                                            </td>
+                                            <td class="px-6 py-4 text-right text-slate-400 font-mono">¥ ${item.cost || 0}</td>
+                                            <td class="px-6 py-4 text-right text-indigo-600 font-mono text-base">¥ ${item.price || 0}</td>
+                                            <td class="px-6 py-4 text-center">
+                                                <button onclick="deleteInventoryItem('${item.id}')" class="text-rose-400 p-2 hover:bg-rose-50 rounded-xl text-xs transition-all active:scale-90 opacity-0 group-hover:opacity-100">下架</button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                    ${inventoryList.length === 0 ? '<tr><td colspan="5" class="py-16 text-center text-slate-300 font-black tracking-widest uppercase text-xs">库存空空如也，请录入商品</td></tr>' : ''}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ================= 历史记录与设置 =================
         function gotoDate(val) { 
             selectedDate = val; 
             switchView('orders'); 
@@ -770,7 +922,6 @@
             `;
         }
 
-        // --- 数据瘦身归档功能 ---
         function archiveOldOrders() {
             const days = parseInt(document.getElementById('archive-days').value, 10);
             showConfirm("历史数据归档与瘦身", `确定要将 ${days} 天前的所有历史订单导出为 Excel，并从系统中彻底清除吗？\n\n此操作能极大提升系统加载速度！`, () => {
@@ -786,36 +937,21 @@
                     return;
                 }
 
-                // 1. 导出为 Excel
                 const exportData = oldOrders.map(o => ({
-                    "系统单号": o.id,
-                    "订单日期": o.date,
-                    "接待员工": o.staff,
-                    "对账人员": o.auditor || '-',
-                    "鞋款型号": o.shoe,
-                    "颜色规格": o.color || '-',
-                    "客户信息": o.client || '-',
-                    "成交价(元)": o.price,
-                    "进货成本(元)": o.cost,
-                    "预估毛利(元)": o.price - o.cost,
-                    "订单状态": o.status || '正常',
-                    "快递单号": o.tracking || '-',
-                    "备注说明": o.remark || '-'
+                    "系统单号": o.id, "订单日期": o.date, "接待员工": o.staff, "对账人员": o.auditor || '-',
+                    "鞋款型号": o.shoe, "颜色规格": o.color || '-', "客户信息": o.client || '-',
+                    "成交价(元)": o.price, "进货成本(元)": o.cost, "预估毛利(元)": o.price - o.cost,
+                    "订单状态": o.status || '正常', "快递单号": o.tracking || '-', "备注说明": o.remark || '-'
                 }));
 
                 const ws = XLSX.utils.json_to_sheet(exportData);
-                const wscols = [
-                    {wch: 12}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 22}, 
-                    {wch: 10}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 12}, 
-                    {wch: 10}, {wch: 20}, {wch: 25}
-                ];
+                const wscols = [ {wch: 12}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 22}, {wch: 10}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 10}, {wch: 20}, {wch: 25} ];
                 ws['!cols'] = wscols;
 
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "历史归档订单");
                 XLSX.writeFile(wb, `${sysTitle}_${days}天前历史归档_${new Date().toLocaleDateString()}.xlsx`);
 
-                // 2. 清理并同步云端
                 orders = newHotOrders;
                 localStorage.setItem('sec_orders', JSON.stringify(orders));
                 render();
@@ -831,7 +967,6 @@
                     <div class="glass-card p-6 md:p-12 rounded-[2rem] md:rounded-[4rem] space-y-8 md:space-y-10">
                         <h3 class="text-2xl md:text-3xl font-black tracking-tighter">系统偏好设置</h3>
                         
-                        <!-- 【新增】系统性能与瘦身模块 -->
                         <section class="space-y-4 md:space-y-6">
                             <div class="flex items-center space-x-3 md:space-x-4 text-slate-900">
                                 <span class="text-indigo-600 font-black text-xl">🚀</span>
@@ -890,30 +1025,6 @@
                                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Logo (单字/Emoji)</label>
                                         <input id="set-sys-logo" type="text" maxlength="2" value="${sysLogo}" placeholder="👟" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-center text-xl md:text-2xl">
                                     </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        <!-- 【新增】鞋款库录入系统 -->
-                        <section class="space-y-4 md:space-y-6">
-                            <div class="flex items-center space-x-3 md:space-x-4 text-slate-900">
-                                <span class="text-indigo-600 font-black text-xl">👟</span>
-                                <span class="font-black text-lg md:text-xl tracking-tight">鞋款录入系统</span>
-                            </div>
-                            <div class="bg-slate-50/50 md:bg-slate-50 p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] space-y-4 md:space-y-6">
-                                <div class="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4">
-                                    <input id="set-shoe-name" type="text" placeholder="录入新鞋款型号，如：倒钩3.0" class="flex-1 bg-white px-5 py-4 md:px-8 md:py-4 rounded-2xl md:rounded-3xl border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base">
-                                    <button type="button" onclick="addShoeModel()" class="w-full md:w-auto px-6 py-4 bg-indigo-600 text-white rounded-2xl md:rounded-3xl font-black shadow-lg md:shadow-xl active:scale-95 transition-all text-sm md:text-base">入库</button>
-                                </div>
-                                <div class="flex flex-wrap gap-2 md:gap-4 pt-4 md:pt-6 border-t border-slate-200/60">
-                                    ${shoeList.map(s => `
-                                        <div class="flex items-center bg-white border border-slate-200 px-3 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl shadow-sm">
-                                            <span class="font-bold text-xs md:text-sm text-slate-700 mr-2 md:mr-3">${s}</span>
-                                            <button type="button" onclick="removeShoeModelByName('${s}')" class="p-1 text-slate-300 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 rounded-md transition-colors active:scale-90">
-                                                <svg class="pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                                            </button>
-                                        </div>
-                                    `).join('')}
                                 </div>
                             </div>
                         </section>
@@ -978,13 +1089,23 @@
             `;
         }
 
+        // ================= 记一笔 与 开单 =================
+        function handleShoeSelection(shoeName) {
+            const selectedShoe = inventoryList.find(item => item.name === shoeName);
+            if (selectedShoe) {
+                if (selectedShoe.price > 0) document.getElementById('f-price').value = selectedShoe.price;
+                if (selectedShoe.cost > 0) document.getElementById('f-cost').value = selectedShoe.cost;
+                showToast("⚡ 价格已自动带出！");
+            }
+        }
+
         function showModal(orderId = null) { 
             const staffOptions = staffList.map(s => `<option value="${s}">${s}</option>`).join('');
             document.getElementById('f-staff').innerHTML = staffOptions;
             document.getElementById('f-auditor').innerHTML = `<option value="">无需对账员</option>` + staffOptions;
             
             const shoeOptions = shoeList.map(s => `<option value="${s}">${s}</option>`).join('');
-            document.getElementById('f-shoe').innerHTML = `<option value="">-- 请选择鞋款型号 --</option>` + shoeOptions;
+            document.getElementById('f-shoe').innerHTML = `<option value="">-- 请下拉选择库存鞋款 --</option>` + shoeOptions;
             
             editingOrderId = orderId; 
             const titleEl = document.getElementById('modalTitle');
@@ -1028,29 +1149,6 @@
 
         function editOrder(id) { showModal(id); }
 
-        function addShoeModel() {
-            const input = document.getElementById('set-shoe-name');
-            const name = input.value.trim();
-            if (!name) return;
-            if (shoeList.includes(name)) { showToast("⚠️ 该鞋款已存在于库中！"); return; }
-            shoeList.push(name);
-            localStorage.setItem('sec_shoes', JSON.stringify(shoeList));
-            input.value = ""; 
-            render();
-            pushToCloud();
-            showToast("✅ 鞋款已自动入库");
-        }
-
-        function removeShoeModelByName(name) {
-            showConfirm("移除鞋款", `确定从鞋库移除 [${name}] 吗？\n不影响历史订单。`, () => {
-                shoeList = shoeList.filter(s => s !== name);
-                localStorage.setItem('sec_shoes', JSON.stringify(shoeList));
-                render();
-                pushToCloud();
-                showToast("🗑️ 鞋款已移除");
-            });
-        }
-
         function addStaff() {
             const input = document.getElementById('set-staff-name');
             const name = input.value.trim();
@@ -1075,11 +1173,9 @@
         }
 
         async function saveSettings() {
-            // 获取值并强制清除所有看不见的空格和换行符，避免微信复制粘贴造成的致命错误
             githubToken = document.getElementById('set-github-token').value.replace(/\s/g, '').trim();
             gistId = document.getElementById('set-gist-id').value.replace(/\s/g, '').trim();
             
-            // 全自动建仓逻辑 (POST 到 GitHub API)
             if (githubToken !== '' && gistId === '') {
                 showToast("☁️ 正在通过 GitHub 为您自动创建云端专属数据仓...");
                 try {
@@ -1094,7 +1190,7 @@
                             public: false,
                             files: {
                                 "shoe_store_data.json": {
-                                    content: JSON.stringify({ orders, staffList, shoeList })
+                                    content: JSON.stringify({ orders, staffList, inventoryList })
                                 }
                             }
                         })
@@ -1108,7 +1204,7 @@
                     
                     const data = await res.json();
                     if (data.id) {
-                        gistId = data.id; // 获取生成的 Gist ID
+                        gistId = data.id; 
                         const gistInput = document.getElementById('set-gist-id');
                         if(gistInput) gistInput.value = gistId;
                         showToast("✅ GitHub 云端仓全自动创建成功！请复制ID发给别的设备。");
@@ -1154,8 +1250,7 @@
                 render();
             }
 
-            // 新设备配好凭证后，强制拉取一遍数据
-            if(isCloudEnabled) {
+            if(!wasCloudEnabled && isCloudEnabled) {
                 pullFromCloud(true);
             }
         }
@@ -1182,7 +1277,7 @@
             const color = document.getElementById('f-color').value;
             const price = document.getElementById('f-price').value;
             const cost = document.getElementById('f-cost').value;
-            if(!shoe || !price || !cost) { showToast("⚠️ 请填写完整的款式和价格信息"); return; }
+            if(!shoe || !price || !cost) { showToast("⚠️ 请下拉选择鞋款并填写完整的价格信息"); return; }
             
             if (editingOrderId) {
                 const index = orders.findIndex(o => o.id === editingOrderId);
@@ -1249,14 +1344,8 @@
             }));
 
             const ws = XLSX.utils.json_to_sheet(exportData);
-            
-            const wscols = [
-                {wch: 12}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 22}, 
-                {wch: 10}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 12}, 
-                {wch: 10}, {wch: 20}, {wch: 25}
-            ];
+            const wscols = [ {wch: 12}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 22}, {wch: 10}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 10}, {wch: 20}, {wch: 25} ];
             ws['!cols'] = wscols;
-
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "每日明细表");
             XLSX.writeFile(wb, `${sysTitle}_${selectedDate}对账明细.xlsx`);
@@ -1264,7 +1353,7 @@
         }
 
         function doExportBackup() {
-            const data = { orders, passwordHash, staffList, shoeList, sysTitle, sysLogo, exportDate: new Date().toISOString() };
+            const data = { orders, passwordHash, staffList, inventoryList, sysTitle, sysLogo, exportDate: new Date().toISOString() };
             const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
@@ -1285,14 +1374,19 @@
                             orders = data.orders;
                             passwordHash = data.passwordHash || "";
                             if (data.staffList) staffList = data.staffList;
-                            if (data.shoeList) shoeList = data.shoeList;
+                            if (data.inventoryList) {
+                                inventoryList = data.inventoryList;
+                                shoeList = inventoryList.map(item => item.name);
+                            } else if (data.shoeList) {
+                                shoeList = data.shoeList;
+                            }
                             if (data.sysTitle) sysTitle = data.sysTitle;
                             if (data.sysLogo) sysLogo = data.sysLogo;
                             
                             localStorage.setItem('sec_orders', JSON.stringify(orders));
                             localStorage.setItem('sec_pwd_hash', passwordHash);
                             localStorage.setItem('sec_staff', JSON.stringify(staffList));
-                            localStorage.setItem('sec_shoes', JSON.stringify(shoeList));
+                            localStorage.setItem('sec_inventory', JSON.stringify(inventoryList));
                             localStorage.setItem('sec_sys_title', sysTitle);
                             localStorage.setItem('sec_sys_logo', sysLogo);
                             
