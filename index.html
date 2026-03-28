@@ -6,6 +6,7 @@
     <title>校园鞋店管理系统 - HyperOS Security+</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
         
@@ -118,6 +119,7 @@
             </div>
         </aside>
 
+        <!-- 移动端悬浮添加按钮 (FAB) -->
         <div class="md:hidden fixed bottom-24 right-6 z-50">
             <button onclick="showModal()" class="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-[0_8px_20px_rgba(79,70,229,0.4)] active:scale-90 transition-transform border-2 border-white">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -200,6 +202,7 @@
         </div>
     </div>
 
+    <!-- 记一笔 弹窗 -->
     <div id="addModal" class="fixed inset-0 z-[500] bg-slate-900/60 backdrop-blur-md items-end md:items-center justify-center p-0 md:p-8 hidden">
         <div class="bg-white w-full md:max-w-2xl rounded-t-[2.5rem] md:rounded-[4rem] p-6 md:p-12 shadow-2xl space-y-6 md:space-y-10 border-t md:border border-white max-h-[90vh] overflow-y-auto page-enter pb-safe">
             <div class="flex justify-between items-start sticky top-0 bg-white z-10 pb-2">
@@ -375,9 +378,13 @@
 
         let sysTitle = localStorage.getItem('sec_sys_title') || '校园鞋店系统';
         let sysLogo = localStorage.getItem('sec_sys_logo') || '👟';
+        
         let savedStaff = JSON.parse(localStorage.getItem('sec_staff'));
         let staffList = (savedStaff && savedStaff.length > 0) ? savedStaff : ['老板'];
         
+        let savedBrands = JSON.parse(localStorage.getItem('sec_brands'));
+        let brandList = savedBrands || ['默认厂牌', '玩觅', '库林'];
+
         let savedInventory = JSON.parse(localStorage.getItem('sec_inventory'));
         let inventoryList = savedInventory || [];
 
@@ -391,12 +398,12 @@
             let oldShoeList = JSON.parse(localStorage.getItem('sec_shoes'));
             if (oldShoeList && oldShoeList.length > 0) {
                 inventoryList = oldShoeList.map((name, index) => ({
-                    id: 'INV' + Date.now() + index, name: name, stock: 0, cost: 0, price: 0
+                    id: 'INV' + Date.now() + index, brand: '默认厂牌', name: name, stock: 0, cost: 0, price: 0
                 }));
             } else {
                 inventoryList = [
-                    { id: 'INV1', name: '空军一号', stock: 2, cost: 85, price: 168 },
-                    { id: 'INV2', name: '熊猫Dunk', stock: 1, cost: 95, price: 188 }
+                    { id: 'INV1', brand: '默认厂牌', name: '空军一号', stock: 2, cost: 85, price: 168 },
+                    { id: 'INV2', brand: '玩觅', name: '全地形跑鞋', stock: 1, cost: 120, price: 258 }
                 ];
             }
             localStorage.setItem('sec_inventory', JSON.stringify(inventoryList));
@@ -405,7 +412,7 @@
         let shoeList = inventoryList.map(item => item.name);
 
         let orders = JSON.parse(localStorage.getItem('sec_orders')) || [
-            { id: '26032301', date: '2026-03-23', staff: '老板', auditor: '老板', client: '张三', shoe: '空军一号', color: '纯白', price: 168, cost: 85, tracking: 'SF12345678', remark: '首单内测送袜', status: '待发货' }
+            { id: '26032301', date: '2026-03-23', staff: '老板', auditor: '老板', client: '张三', brand: '默认厂牌', shoe: '空军一号', color: '纯白', price: 168, cost: 85, tracking: 'SF12345678', remark: '首单内测送袜', status: '待发货' }
         ];
         
         let passwordHash = localStorage.getItem('sec_pwd_hash') || ""; 
@@ -503,6 +510,7 @@
                     const content = JSON.parse(data.files["shoe_store_data.json"].content);
                     if (content.orders) orders = content.orders;
                     if (content.staffList) staffList = content.staffList;
+                    if (content.brandList) brandList = content.brandList; // 同步品牌
                     if (content.inventoryList) {
                         inventoryList = content.inventoryList;
                         shoeList = inventoryList.map(item => item.name);
@@ -512,6 +520,7 @@
                     
                     localStorage.setItem('sec_orders', JSON.stringify(orders));
                     localStorage.setItem('sec_staff', JSON.stringify(staffList));
+                    localStorage.setItem('sec_brands', JSON.stringify(brandList));
                     localStorage.setItem('sec_inventory', JSON.stringify(inventoryList));
                     localStorage.setItem('sec_aftersales', JSON.stringify(aftersalesList));
                     localStorage.setItem('sec_memos', JSON.stringify(memoList));
@@ -541,7 +550,7 @@
                     body: JSON.stringify({
                         files: {
                             "shoe_store_data.json": {
-                                content: JSON.stringify({ orders, staffList, inventoryList, aftersalesList, memoList })
+                                content: JSON.stringify({ orders, staffList, brandList, inventoryList, aftersalesList, memoList })
                             }
                         }
                     })
@@ -626,6 +635,7 @@
             const revenue = todayOrders.reduce((s,o) => s + Number(o.price), 0);
             const profit = todayOrders.reduce((s,o) => s + (Number(o.price) - Number(o.cost)), 0);
 
+            // 统计鞋款退货率 (全盘)
             const shoeStats = {};
             orders.forEach(o => {
                 if(!shoeStats[o.shoe]) shoeStats[o.shoe] = { total: 0, returned: 0 };
@@ -636,6 +646,19 @@
                 shoe, total: stat.total, 
                 rate: stat.total > 0 ? (stat.returned / stat.total * 100).toFixed(1) : 0
             })).sort((a, b) => b.rate - a.rate).slice(0, 4);
+
+            // ✅ 统计【按月度：本月品牌结算台账】
+            const todayMonth = today.substring(0, 7); // 取前7位 "YYYY-MM"
+            const monthOrders = orders.filter(o => o.date.startsWith(todayMonth) && o.status !== '已退货');
+            
+            const monthlyBrandStats = {};
+            monthOrders.forEach(o => {
+                const b = o.brand || '默认厂牌';
+                if (!monthlyBrandStats[b]) monthlyBrandStats[b] = { count: 0, cost: 0, revenue: 0 };
+                monthlyBrandStats[b].count++;
+                monthlyBrandStats[b].cost += Number(o.cost);
+                monthlyBrandStats[b].revenue += Number(o.price);
+            });
 
             c.innerHTML = `
                 <div class="space-y-6 md:space-y-10 page-enter">
@@ -652,12 +675,54 @@
                             <div class="absolute top-[-30%] right-[-10%] w-32 h-32 md:w-48 md:h-48 bg-white/10 rounded-full blur-2xl md:blur-3xl"></div>
                         </div>
                         <div class="glass-card p-6 md:p-10 rounded-[2rem] md:rounded-[3rem]">
-                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 md:mb-3">有效成交数</p>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 md:mb-3">今日成交单数</p>
                             <h3 class="text-3xl md:text-5xl font-black tracking-tighter">${todayOrders.length} <span class="text-base md:text-lg text-slate-400 font-bold ml-1">单</span></h3>
                         </div>
                     </div>
 
-                    <div class="glass-card p-6 md:p-10 rounded-[2rem] md:rounded-[3.5rem] mt-8 border-t-4 border-rose-400">
+                    <!-- ✅ 升级为：本月各厂牌应结账单 -->
+                    <div class="glass-card p-6 md:p-10 rounded-[2rem] md:rounded-[3.5rem] mt-8 border-t-4 border-indigo-400 shadow-sm">
+                        <div class="flex justify-between items-center mb-6">
+                            <h4 class="font-black text-xl text-slate-800 flex items-center"><span class="text-2xl mr-2">🏢</span> 本月各厂牌应结账单 <span class="text-sm text-indigo-500 font-bold ml-3 bg-indigo-50 px-3 py-1 rounded-lg">月份: ${todayMonth}</span></h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm min-w-[600px]">
+                                <thead class="bg-slate-50/80 text-slate-400 font-black uppercase tracking-widest text-[10px] border-b border-slate-100">
+                                    <tr>
+                                        <th class="px-5 py-4">品牌 / 厂牌</th>
+                                        <th class="px-5 py-4 text-center">本月卖出 (双)</th>
+                                        <th class="px-5 py-4 text-right">本月营业额 (元)</th>
+                                        <th class="px-5 py-4 text-right text-rose-500">本月应返厂成本 (元)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="font-bold divide-y divide-slate-50">
+                                    ${Object.entries(monthlyBrandStats).length > 0 ? Object.entries(monthlyBrandStats).map(([b, stat]) => `
+                                        <tr class="hover:bg-slate-50/50 transition-colors group">
+                                            <td class="px-5 py-4 text-slate-800">
+                                                <div class="flex items-center">
+                                                    <span class="w-2 h-2 bg-indigo-400 rounded-full mr-2"></span>
+                                                    ${escapeHtml(b)}
+                                                </div>
+                                            </td>
+                                            <td class="px-5 py-4 text-center text-lg">${stat.count}</td>
+                                            <td class="px-5 py-4 text-right text-indigo-600 text-lg">¥ ${stat.revenue.toLocaleString()}</td>
+                                            <td class="px-5 py-4 text-right text-rose-500 text-lg">¥ ${stat.cost.toLocaleString()}</td>
+                                        </tr>
+                                    `).join('') : '<tr><td colspan="4" class="py-10 text-center text-slate-300 font-black tracking-widest uppercase text-xs">本月暂无该厂牌销售数据</td></tr>'}
+                                </tbody>
+                                ${Object.entries(monthlyBrandStats).length > 0 ? `
+                                <tfoot class="bg-rose-50/50 font-black text-rose-900 border-t border-rose-100">
+                                    <tr>
+                                        <td colspan="3" class="px-5 py-5 text-right uppercase tracking-[0.2em] text-[10px] text-rose-500">本月应结总货款</td>
+                                        <td class="px-5 py-5 text-right text-2xl text-rose-600 tracking-tighter">¥ ${Object.values(monthlyBrandStats).reduce((sum, s) => sum + s.cost, 0).toLocaleString()}</td>
+                                    </tr>
+                                </tfoot>
+                                ` : ''}
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6 md:p-10 rounded-[2rem] md:rounded-[3.5rem] mt-8 border-t-4 border-rose-400 shadow-sm">
                         <h4 class="font-black text-xl mb-6 text-slate-800 flex items-center"><span class="text-2xl mr-2">🚨</span> SKU 爆款退货率风控预警</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                             ${returnRates.length > 0 ? returnRates.map(r => `
@@ -691,7 +756,7 @@
                         const newAftersale = {
                             id: 'AS' + Date.now(),
                             orderId: id,
-                            manufacturer: orders[index].shoe, 
+                            manufacturer: orders[index].brand || orders[index].shoe, 
                             type: '退货退款',
                             remark: reason,
                             status: '待处理',
@@ -809,7 +874,7 @@
                                     <tr>
                                         <th class="px-5 py-4 md:px-8 md:py-7 whitespace-nowrap">单号</th>
                                         <th class="px-5 py-4 md:px-8 md:py-7 whitespace-nowrap">接待/对账</th>
-                                        <th class="px-5 py-4 md:px-8 md:py-7 whitespace-nowrap">鞋款</th>
+                                        <th class="px-5 py-4 md:px-8 md:py-7 whitespace-nowrap">品牌与鞋款</th>
                                         <th class="px-5 py-4 md:px-8 md:py-7 whitespace-nowrap">颜色</th>
                                         <th class="px-5 py-4 md:px-8 md:py-7 whitespace-nowrap">客户</th>
                                         <th class="px-5 py-4 md:px-8 md:py-7 text-right whitespace-nowrap">成交价</th>
@@ -829,7 +894,10 @@
                                                     <span class="bg-amber-50 text-amber-600 px-2 py-0.5 rounded-lg text-[9px] font-black w-max">账: ${escapeHtml(o.auditor) || '-'}</span>
                                                 </div>
                                             </td>
-                                            <td class="px-5 py-4 md:px-8 md:py-6 tracking-tight text-sm">${escapeHtml(o.shoe)}</td>
+                                            <td class="px-5 py-4 md:px-8 md:py-6 tracking-tight">
+                                                <div class="text-[10px] text-indigo-500 font-black mb-0.5">${escapeHtml(o.brand || '默认厂牌')}</div>
+                                                <div class="text-sm text-slate-800">${escapeHtml(o.shoe)}</div>
+                                            </td>
                                             <td class="px-5 py-4 md:px-8 md:py-6 text-slate-500 text-xs">${escapeHtml(o.color) || '-'}</td>
                                             <td class="px-5 py-4 md:px-8 md:py-6 text-slate-500 text-xs">${escapeHtml(o.client) || '-'}</td>
                                             <td class="px-5 py-4 md:px-8 md:py-6 text-right text-indigo-600 text-base ${o.status === '已退货' ? 'line-through' : ''}">¥ ${o.price}</td>
@@ -883,8 +951,30 @@
             `;
         }
 
-        // ================= 【库存系统】 =================
+        // ================= 【品牌与库存系统】 =================
+        function addBrand() {
+            const name = document.getElementById('set-brand-name').value.trim();
+            if (!name) return showToast("⚠️ 品牌名称不能为空！");
+            if (brandList.includes(name)) return showToast("⚠️ 该品牌已存在！");
+            brandList.push(name);
+            localStorage.setItem('sec_brands', JSON.stringify(brandList));
+            render();
+            pushToCloud();
+            showToast("✅ 品牌添加成功");
+        }
+
+        function deleteBrand(name) {
+            showConfirm("删除品牌", `确定删除品牌 [${escapeHtml(name)}] 吗？\n删除后不影响已有库存和订单。`, () => {
+                brandList = brandList.filter(b => b !== name);
+                localStorage.setItem('sec_brands', JSON.stringify(brandList));
+                render();
+                pushToCloud();
+                showToast("🗑️ 品牌已删除");
+            });
+        }
+
         function addInventoryItem() {
+            const brand = document.getElementById('set-shoe-brand').value;
             const name = document.getElementById('set-shoe-name').value.trim();
             const stock = parseInt(document.getElementById('set-shoe-stock').value) || 0;
             const cost = parseFloat(document.getElementById('set-shoe-cost').value) || 0;
@@ -893,7 +983,7 @@
             if (!name) return showToast("⚠️ 鞋款名称不能为空！");
             if (inventoryList.some(item => item.name === name)) return showToast("⚠️ 该鞋款已存在于库中！");
 
-            const newItem = { id: 'INV' + Date.now(), name, stock, cost, price };
+            const newItem = { id: 'INV' + Date.now(), brand, name, stock, cost, price };
             inventoryList.unshift(newItem);
             shoeList = inventoryList.map(item => item.name);
             localStorage.setItem('sec_inventory', JSON.stringify(inventoryList));
@@ -931,6 +1021,8 @@
                     }
                     inventoryList[index][field] = value.trim();
                     shoeList = inventoryList.map(item => item.name);
+                } else if (field === 'brand') {
+                    inventoryList[index][field] = value;
                 } else {
                     inventoryList[index][field] = parseFloat(value) || 0;
                 }
@@ -962,12 +1054,37 @@
                         </div>
                     </div>
 
+                    <!-- ✅ 品牌管理模块 -->
+                    <div class="glass-card p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-sm border border-white">
+                        <h4 class="font-black text-xl mb-6 text-slate-800 flex items-center">
+                            <span class="text-2xl mr-2">🏷️</span> 品牌/厂牌管理
+                        </h4>
+                        <div class="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4">
+                            <input id="set-brand-name" type="text" placeholder="输入新品牌名称 (如：玩觅、库林)" class="flex-1 bg-slate-50 px-5 py-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm">
+                            <button onclick="addBrand()" class="w-full md:w-auto px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-100 active:scale-95 transition-all text-sm">
+                                新增品牌
+                            </button>
+                        </div>
+                        <div class="flex flex-wrap gap-2 md:gap-4 pt-6 mt-6 border-t border-slate-100">
+                            ${brandList.map(b => `
+                                <div class="flex items-center bg-white border border-slate-200 px-3 py-1.5 md:px-4 md:py-2 rounded-xl shadow-sm">
+                                    <span class="font-bold text-xs text-slate-700 mr-2">${escapeHtml(b)}</span>
+                                    ${b !== '默认厂牌' ? `<button type="button" onclick="deleteBrand('${escapeHtml(b)}')" class="p-1 text-slate-300 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 rounded-md transition-colors active:scale-90"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- ✅ 新品入库模块 -->
                     <div class="glass-card p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-sm border border-white">
                         <h4 class="font-black text-xl mb-6 text-slate-800 flex items-center">
                             <svg class="mr-2 text-indigo-600" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
                             新品入库
                         </h4>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                            <select id="set-shoe-brand" class="w-full bg-slate-50 px-5 py-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm">
+                                ${brandList.map(b => `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`).join('')}
+                            </select>
                             <input id="set-shoe-name" type="text" placeholder="鞋款名称 (必填)" class="w-full bg-slate-50 px-5 py-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm">
                             <input id="set-shoe-stock" type="number" placeholder="样鞋库存 (双)" class="w-full bg-slate-50 px-5 py-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm">
                             <input id="set-shoe-cost" type="number" placeholder="默认进价 (¥)" class="w-full bg-slate-50 px-5 py-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm">
@@ -980,22 +1097,28 @@
 
                     <div class="glass-card rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-sm border border-white">
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm min-w-[800px]">
+                            <table class="w-full text-left text-sm min-w-[900px]">
                                 <thead class="bg-slate-50/80 text-slate-400 font-black uppercase tracking-widest text-[10px] border-b border-slate-100">
                                     <tr>
+                                        <th class="px-4 py-5">所属厂牌</th>
                                         <th class="px-4 py-5">鞋款型号</th>
-                                        <th class="px-4 py-5 text-center">样鞋库存 (可直接修改)</th>
-                                        <th class="px-4 py-5 text-right">默认底价 (可直接修改)</th>
-                                        <th class="px-4 py-5 text-right">默认售价 (可直接修改)</th>
+                                        <th class="px-4 py-5 text-center">样鞋库存 (可改)</th>
+                                        <th class="px-4 py-5 text-right">默认底价 (可改)</th>
+                                        <th class="px-4 py-5 text-right">默认售价 (可改)</th>
                                         <th class="px-4 py-5 text-center">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody class="font-bold divide-y divide-slate-50">
                                     ${inventoryList.map(item => `
                                         <tr class="hover:bg-slate-50/50 transition-colors group">
+                                            <td class="px-4 py-4">
+                                                <select onchange="updateInventoryItem('${item.id}', 'brand', this.value)" class="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-xl text-xs font-black outline-none border border-transparent hover:border-indigo-200 cursor-pointer">
+                                                    ${brandList.map(b => `<option value="${escapeHtml(b)}" ${item.brand === b ? 'selected' : ''}>${escapeHtml(b)}</option>`).join('')}
+                                                    ${!brandList.includes(item.brand) ? `<option value="${escapeHtml(item.brand || '未知')}" selected>${escapeHtml(item.brand || '未知')}</option>` : ''}
+                                                </select>
+                                            </td>
                                             <td class="px-4 py-4 text-slate-800 text-base tracking-tight">
                                                 <div class="flex items-center">
-                                                    <div class="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center mr-3 text-xs flex-shrink-0">👟</div>
                                                     <input type="text" value="${escapeHtml(item.name)}" onchange="updateInventoryItem('${item.id}', 'name', this.value)" class="w-full bg-transparent font-bold outline-none border-b border-dashed border-transparent hover:border-slate-300 focus:border-indigo-500 py-1 transition-colors" placeholder="鞋款名称">
                                                 </div>
                                             </td>
@@ -1022,7 +1145,7 @@
                                             </td>
                                         </tr>
                                     `).join('')}
-                                    ${inventoryList.length === 0 ? '<tr><td colspan="5" class="py-16 text-center text-slate-300 font-black tracking-widest uppercase text-xs">库存空空如也，请录入商品</td></tr>' : ''}
+                                    ${inventoryList.length === 0 ? '<tr><td colspan="6" class="py-16 text-center text-slate-300 font-black tracking-widest uppercase text-xs">库存空空如也，请录入商品</td></tr>' : ''}
                                 </tbody>
                             </table>
                         </div>
@@ -1292,13 +1415,13 @@
 
                 const exportData = oldOrders.map(o => ({
                     "系统单号": o.id, "订单日期": o.date, "接待员工": o.staff, "对账人员": o.auditor || '-',
-                    "鞋款型号": o.shoe, "颜色规格": o.color || '-', "客户信息": o.client || '-',
+                    "品牌": o.brand || '默认厂牌', "鞋款型号": o.shoe, "颜色规格": o.color || '-', "客户信息": o.client || '-',
                     "成交价(元)": o.price, "进货成本(元)": o.cost, "预估毛利(元)": o.price - o.cost,
                     "订单状态": o.status || '正常', "快递单号": o.tracking || '-', "备注说明": o.remark || '-'
                 }));
 
                 const ws = XLSX.utils.json_to_sheet(exportData);
-                const wscols = [ {wch: 12}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 22}, {wch: 10}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 10}, {wch: 20}, {wch: 25} ];
+                const wscols = [ {wch: 12}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 15}, {wch: 22}, {wch: 10}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 10}, {wch: 20}, {wch: 25} ];
                 ws['!cols'] = wscols;
 
                 const wb = XLSX.utils.book_new();
@@ -1494,7 +1617,7 @@
                             public: false,
                             files: {
                                 "shoe_store_data.json": {
-                                    content: JSON.stringify({ orders, staffList, inventoryList, aftersalesList, memoList })
+                                    content: JSON.stringify({ orders, staffList, brandList, inventoryList, aftersalesList, memoList })
                                 }
                             }
                         })
@@ -1565,7 +1688,12 @@
             document.getElementById('f-staff').innerHTML = staffOptions;
             document.getElementById('f-auditor').innerHTML = `<option value="">无需对账员</option>` + staffOptions;
             
-            const shoeOptions = shoeList.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+            // 下拉框按照品牌分组展示，如果没有匹配到品牌就直接显示
+            const shoeOptions = shoeList.map(s => {
+                const item = inventoryList.find(i => i.name === s);
+                const brand = item ? (item.brand || '默认厂牌') : '默认厂牌';
+                return `<option value="${escapeHtml(s)}">[${escapeHtml(brand)}] ${escapeHtml(s)}</option>`;
+            }).join('');
             document.getElementById('f-shoe').innerHTML = `<option value="">-- 请下拉选择库存鞋款 --</option>` + shoeOptions;
             
             editingOrderId = orderId; 
@@ -1615,7 +1743,7 @@
             if (selectedShoe) {
                 if (selectedShoe.price !== undefined && selectedShoe.price !== "") document.getElementById('f-price').value = selectedShoe.price;
                 if (selectedShoe.cost !== undefined && selectedShoe.cost !== "") document.getElementById('f-cost').value = selectedShoe.cost;
-                showToast("⚡ 价格已自动带出，可按需修改售价！");
+                showToast(`⚡ [${selectedShoe.brand}] 价格已自动带出，可按需修改售价！`);
             }
         }
 
@@ -1646,12 +1774,16 @@
                 showToast("⚠️ 请下拉选择鞋款并填写完整的价格信息"); 
                 return; 
             }
+
+            const shoeItem = inventoryList.find(i => i.name === shoe);
+            const brand = shoeItem ? (shoeItem.brand || '默认厂牌') : '默认厂牌';
             
             if (editingOrderId) {
                 const index = orders.findIndex(o => o.id === editingOrderId);
                 if (index !== -1) {
                     orders[index].staff = document.getElementById('f-staff').value;
                     orders[index].auditor = document.getElementById('f-auditor').value;
+                    orders[index].brand = brand;
                     orders[index].shoe = shoe;
                     orders[index].color = color;
                     orders[index].client = document.getElementById('f-client').value;
@@ -1666,6 +1798,7 @@
                     id: newId, date: selectedDate, 
                     staff: document.getElementById('f-staff').value,
                     auditor: document.getElementById('f-auditor').value,
+                    brand: brand,
                     shoe: shoe, color: color, client: document.getElementById('f-client').value, 
                     tracking: document.getElementById('f-tracking').value,
                     remark: document.getElementById('f-remark').value,
@@ -1708,19 +1841,19 @@
 
             const orderData = orders.map(o => ({
                 "系统单号": o.id, "订单日期": o.date, "接待员工": o.staff, "对账人员": o.auditor || '-',
-                "鞋款型号": o.shoe, "颜色规格": o.color || '-', "客户信息": o.client || '-',
+                "厂牌": o.brand || '默认厂牌', "鞋款型号": o.shoe, "颜色规格": o.color || '-', "客户信息": o.client || '-',
                 "成交价(元)": o.price, "进货成本(元)": o.cost, "预估毛利(元)": o.price - o.cost,
                 "订单状态": o.status || '正常', "快递单号": o.tracking || '-', "备注说明": o.remark || '-'
             }));
             const wsOrders = XLSX.utils.json_to_sheet(orderData.length > 0 ? orderData : [{"提示": "暂无订单数据"}]);
-            wsOrders['!cols'] = [ {wch: 12}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 22}, {wch: 10}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 10}, {wch: 20}, {wch: 25} ];
+            wsOrders['!cols'] = [ {wch: 12}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 15}, {wch: 22}, {wch: 10}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 10}, {wch: 20}, {wch: 25} ];
             XLSX.utils.book_append_sheet(wb, wsOrders, "全盘订单明细");
 
             const invData = inventoryList.map(i => ({
-                "鞋款型号": i.name, "当前样鞋库存(双)": i.stock || 0, "默认进价(元)": i.cost || 0, "默认售价(元)": i.price || 0
+                "所属厂牌": i.brand || '默认厂牌', "鞋款型号": i.name, "当前样鞋库存(双)": i.stock || 0, "默认进价(元)": i.cost || 0, "默认售价(元)": i.price || 0
             }));
             const wsInv = XLSX.utils.json_to_sheet(invData.length > 0 ? invData : [{"提示": "暂无库存数据"}]);
-            wsInv['!cols'] = [ {wch: 25}, {wch: 18}, {wch: 15}, {wch: 15} ];
+            wsInv['!cols'] = [ {wch: 15}, {wch: 25}, {wch: 18}, {wch: 15}, {wch: 15} ];
             XLSX.utils.book_append_sheet(wb, wsInv, "库存商品台账");
 
             const asData = aftersalesList.map(a => ({
@@ -1736,7 +1869,7 @@
 
         function doExportBackup() {
             const data = { 
-                orders, passwordHash, staffList, inventoryList, aftersalesList, memoList, 
+                orders, passwordHash, staffList, brandList, inventoryList, aftersalesList, memoList, 
                 sysTitle, sysLogo, exportDate: new Date().toISOString() 
             };
             const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
@@ -1759,6 +1892,7 @@
                             orders = data.orders;
                             passwordHash = data.passwordHash || "";
                             if (data.staffList) staffList = data.staffList;
+                            if (data.brandList) brandList = data.brandList; // 导入品牌列表
                             
                             if (data.inventoryList) {
                                 inventoryList = data.inventoryList;
@@ -1766,7 +1900,7 @@
                             } else if (data.shoeList) {
                                 shoeList = data.shoeList;
                                 inventoryList = shoeList.map((name, index) => ({
-                                    id: 'INV' + Date.now() + index, name: name, stock: 0, cost: 0, price: 0
+                                    id: 'INV' + Date.now() + index, brand: '默认厂牌', name: name, stock: 0, cost: 0, price: 0
                                 }));
                             }
 
@@ -1779,6 +1913,7 @@
                             localStorage.setItem('sec_orders', JSON.stringify(orders));
                             localStorage.setItem('sec_pwd_hash', passwordHash);
                             localStorage.setItem('sec_staff', JSON.stringify(staffList));
+                            localStorage.setItem('sec_brands', JSON.stringify(brandList)); // 保存品牌
                             localStorage.setItem('sec_inventory', JSON.stringify(inventoryList));
                             localStorage.setItem('sec_aftersales', JSON.stringify(aftersalesList));
                             localStorage.setItem('sec_memos', JSON.stringify(memoList));
@@ -1800,7 +1935,7 @@
         Object.assign(window, {
             updateSelectedDate, exportExcel, showModal, closeModal,
             saveOrder, deleteOrder, editOrder, processReturn, undoReturn,
-            gotoDate, addInventoryItem, deleteInventoryItem, updateInventoryItem,
+            gotoDate, addBrand, deleteBrand, addInventoryItem, deleteInventoryItem, updateInventoryItem,
             addAftersale, updateAftersaleStatus, deleteAftersale, addMemo, toggleMemo,
             deleteMemo, archiveOldOrders, doExportBackup, doImportBackup, saveSettings,
             handleShoeSelection, copyGistId, checkUnlock, lockSystem, switchView,
