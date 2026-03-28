@@ -407,7 +407,8 @@
         let staffList = (savedStaff && savedStaff.length > 0) ? savedStaff : ['老板'];
         
         let savedBrands = JSON.parse(localStorage.getItem('sec_brands'));
-        let brandList = savedBrands || ['默认厂牌', '玩觅', '库林'];
+        // 修正：将之前的随机品牌替换为通用、符合设定的自主品牌占位符
+        let brandList = savedBrands || ['默认厂牌', '自主品牌A', '国潮厂牌B'];
 
         let savedInventory = JSON.parse(localStorage.getItem('sec_inventory'));
         let inventoryList = savedInventory || [];
@@ -426,8 +427,8 @@
                 }));
             } else {
                 inventoryList = [
-                    { id: 'INV1', brand: '默认厂牌', name: '空军一号', stock: 2, cost: 85, price: 168 },
-                    { id: 'INV2', brand: '玩觅', name: '全地形跑鞋', stock: 1, cost: 120, price: 258 }
+                    { id: 'INV1', brand: '默认厂牌', name: '经典高帮板鞋', stock: 2, cost: 85, price: 168 },
+                    { id: 'INV2', brand: '自主品牌A', name: '全地形实战跑鞋', stock: 1, cost: 120, price: 258 }
                 ];
             }
             localStorage.setItem('sec_inventory', JSON.stringify(inventoryList));
@@ -436,7 +437,7 @@
         let shoeList = inventoryList.map(item => item.name);
 
         let orders = JSON.parse(localStorage.getItem('sec_orders')) || [
-            { id: '26032301', date: '2026-03-23', staff: '老板', auditor: '老板', client: '张三', brand: '默认厂牌', shoe: '空军一号', color: '纯白', size: '42.5', quantity: 1, price: 168, cost: 85, tracking: 'SF12345678', remark: '首单内测送袜', status: '待发货' }
+            { id: '26032301', date: '2026-03-23', staff: '老板', auditor: '老板', client: '张三', brand: '默认厂牌', shoe: '经典高帮板鞋', color: '纯白', size: '42.5', quantity: 1, price: 168, cost: 85, tracking: 'SF12345678', remark: '首单内测送袜', status: '待发货' }
         ];
         
         let passwordHash = localStorage.getItem('sec_pwd_hash') || ""; 
@@ -758,7 +759,7 @@
                         <h4 class="font-black text-xl mb-6 text-slate-800 flex items-center"><span class="text-2xl mr-2">🚨</span> SKU 爆款退货率风控预警</h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                             ${returnRates.length > 0 ? returnRates.map(r => `
-                                <div class="bg-slate-50 p-5 rounded-2xl border ${r.rate >= 20 ? 'border-rose-200 bg-rose-50' : 'border-slate-100'}">
+                                <div class="bg-slate-50 p-5 p-5 rounded-2xl border ${r.rate >= 20 ? 'border-rose-200 bg-rose-50' : 'border-slate-100'}">
                                     <div class="text-xs font-bold text-slate-500 mb-1 truncate" title="${escapeHtml(r.shoe)}">${escapeHtml(r.shoe)}</div>
                                     <div class="flex items-end justify-between">
                                         <div class="text-2xl font-black ${r.rate >= 20 ? 'text-rose-600' : 'text-slate-800'}">${r.rate}%</div>
@@ -1105,7 +1106,7 @@
                             <span class="text-2xl mr-2">🏷️</span> 品牌/厂牌管理
                         </h4>
                         <div class="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4">
-                            <input id="set-brand-name" type="text" placeholder="输入新品牌名称 (如：玩觅、库林)" class="flex-1 bg-slate-50 px-5 py-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm">
+                            <input id="set-brand-name" type="text" placeholder="输入新品牌名称 (如：自主品牌A、国潮厂牌)" class="flex-1 bg-slate-50 px-5 py-4 rounded-2xl border-none outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm">
                             <button onclick="addBrand()" class="w-full md:w-auto px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-100 active:scale-95 transition-all text-sm">
                                 新增品牌
                             </button>
@@ -1444,6 +1445,107 @@
             `;
         }
 
+        // ================= 报表生成引擎全面升级 =================
+        function exportExcel() {
+            if (orders.length === 0 && inventoryList.length === 0 && aftersalesList.length === 0) {
+                showToast("⚠️ 系统中没有任何数据可供导出");
+                return;
+            }
+            
+            showToast("📊 正在生成全局多维数据报表...");
+            const wb = XLSX.utils.book_new();
+
+            // 1. 全盘订单明细 (增加自动财务汇总行)
+            let totalQty = 0, totalRev = 0, totalCost = 0, totalProfit = 0;
+            const orderData = orders.map(o => {
+                const qty = Number(o.quantity || 1);
+                const price = Number(o.price || 0);
+                const cost = Number(o.cost || 0);
+                const totalR = price * qty;
+                const totalC = cost * qty;
+                const prof = (price - cost) * qty;
+
+                // 退货单不计入总计
+                if (o.status !== '已退货') {
+                    totalQty += qty;
+                    totalRev += totalR;
+                    totalCost += totalC;
+                    totalProfit += prof;
+                }
+
+                return {
+                    "系统单号": o.id, 
+                    "订单日期": o.date, 
+                    "状态": o.status || '正常',
+                    "厂牌": o.brand || '默认厂牌', 
+                    "鞋款型号": o.shoe, 
+                    "颜色规格": o.color || '-', 
+                    "尺码": o.size || '-', 
+                    "数量(双)": qty, 
+                    "总营收(¥)": totalR, 
+                    "总成本(¥)": totalC,
+                    "总毛利(¥)": prof,
+                    "单双售价(¥)": price, 
+                    "单双成本(¥)": cost, 
+                    "客户信息": o.client || '-',
+                    "接待/对账": `${o.staff} / ${o.auditor || '-'}`,
+                    "快递单号": o.tracking || '-', 
+                    "备注说明": o.remark || '-'
+                };
+            });
+
+            // 底部增加汇总行
+            if (orderData.length > 0) {
+                orderData.push({}); // 增加一个空行作为分隔
+                orderData.push({
+                    "系统单号": "【本期有效总计】",
+                    "状态": "(不含已退货订单)",
+                    "数量(双)": totalQty,
+                    "总营收(¥)": totalRev,
+                    "总成本(¥)": totalCost,
+                    "总毛利(¥)": totalProfit
+                });
+            }
+
+            const wsOrders = XLSX.utils.json_to_sheet(orderData.length > 0 ? orderData : [{"提示": "暂无订单数据"}]);
+            // 优化列宽，让表格打开就非常清晰美观
+            wsOrders['!cols'] = [ 
+                {wch: 14}, {wch: 12}, {wch: 12}, {wch: 15}, {wch: 22}, 
+                {wch: 12}, {wch: 10}, {wch: 10}, {wch: 12}, {wch: 12}, 
+                {wch: 12}, {wch: 12}, {wch: 12}, {wch: 18}, {wch: 16}, 
+                {wch: 20}, {wch: 25} 
+            ];
+            XLSX.utils.book_append_sheet(wb, wsOrders, "全盘订单明细");
+
+            // 2. 库存商品台账
+            const invData = inventoryList.map(i => ({
+                "所属厂牌": i.brand || '默认厂牌', 
+                "鞋款型号": i.name, 
+                "当前样鞋库存(双)": i.stock || 0, 
+                "默认进价(¥)": i.cost || 0, 
+                "默认售价(¥)": i.price || 0
+            }));
+            const wsInv = XLSX.utils.json_to_sheet(invData.length > 0 ? invData : [{"提示": "暂无库存数据"}]);
+            wsInv['!cols'] = [ {wch: 15}, {wch: 25}, {wch: 18}, {wch: 15}, {wch: 15} ];
+            XLSX.utils.book_append_sheet(wb, wsInv, "库存商品台账");
+
+            // 3. 售后追踪记录
+            const asData = aftersalesList.map(a => ({
+                "登记日期": a.date, 
+                "完结日期": a.finishDate || '-', 
+                "关联订单号": a.orderId, 
+                "对接厂商": a.manufacturer,
+                "售后类型": a.type, 
+                "当前状态": a.status, 
+                "跟进备注": a.remark || '-'
+            }));
+            const wsAs = XLSX.utils.json_to_sheet(asData.length > 0 ? asData : [{"提示": "暂无售后数据"}]);
+            wsAs['!cols'] = [ {wch: 15}, {wch: 15}, {wch: 16}, {wch: 20}, {wch: 15}, {wch: 15}, {wch: 35} ];
+            XLSX.utils.book_append_sheet(wb, wsAs, "售后追踪记录");
+
+            XLSX.writeFile(wb, `${sysTitle}_全局财务报表_${getLocalDateStr()}.xlsx`);
+        }
+
         function archiveOldOrders() {
             const days = parseInt(document.getElementById('archive-days').value, 10);
             showConfirm("历史数据归档与瘦身", `确定要将 ${days} 天前的所有历史订单导出为 Excel，并从系统中彻底清除吗？\n\n此操作能极大提升系统加载速度！`, () => {
@@ -1459,18 +1561,39 @@
                     return;
                 }
 
-                const exportData = oldOrders.map(o => ({
-                    "系统单号": o.id, "订单日期": o.date, "接待员工": o.staff, "对账人员": o.auditor || '-',
-                    "品牌": o.brand || '默认厂牌', "鞋款型号": o.shoe, "颜色规格": o.color || '-', "尺码": o.size || '-', "数量(双)": o.quantity || 1, "客户信息": o.client || '-',
-                    "单件成交价(元)": o.price, "单件成本(元)": o.cost, 
-                    "总成交价(元)": Number(o.price) * Number(o.quantity || 1), 
-                    "总毛利(元)": (Number(o.price) - Number(o.cost)) * Number(o.quantity || 1),
-                    "订单状态": o.status || '正常', "快递单号": o.tracking || '-', "备注说明": o.remark || '-'
-                }));
+                // 归档表格同样应用新的排版引擎
+                let totalQty = 0, totalRev = 0, totalCost = 0, totalProfit = 0;
+                const exportData = oldOrders.map(o => {
+                    const qty = Number(o.quantity || 1);
+                    const price = Number(o.price || 0);
+                    const cost = Number(o.cost || 0);
+                    const totalR = price * qty;
+                    const totalC = cost * qty;
+                    const prof = (price - cost) * qty;
+
+                    if (o.status !== '已退货') {
+                        totalQty += qty; totalRev += totalR; totalCost += totalC; totalProfit += prof;
+                    }
+
+                    return {
+                        "系统单号": o.id, "订单日期": o.date, "状态": o.status || '正常',
+                        "厂牌": o.brand || '默认厂牌', "鞋款型号": o.shoe, "颜色规格": o.color || '-', 
+                        "尺码": o.size || '-', "数量(双)": qty, 
+                        "总营收(¥)": totalR, "总成本(¥)": totalC, "总毛利(¥)": prof,
+                        "单双售价(¥)": price, "单双成本(¥)": cost, 
+                        "客户信息": o.client || '-', "接待/对账": `${o.staff} / ${o.auditor || '-'}`,
+                        "快递单号": o.tracking || '-', "备注说明": o.remark || '-'
+                    };
+                });
+
+                exportData.push({});
+                exportData.push({
+                    "系统单号": "【归档有效总计】", "状态": "(不含已退货)", "数量(双)": totalQty,
+                    "总营收(¥)": totalRev, "总成本(¥)": totalCost, "总毛利(¥)": totalProfit
+                });
 
                 const ws = XLSX.utils.json_to_sheet(exportData);
-                const wscols = [ {wch: 12}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 15}, {wch: 22}, {wch: 10}, {wch: 10}, {wch: 10}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 12}, {wch: 20}, {wch: 25} ];
-                ws['!cols'] = wscols;
+                ws['!cols'] = [ {wch: 14}, {wch: 12}, {wch: 12}, {wch: 15}, {wch: 22}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 18}, {wch: 16}, {wch: 20}, {wch: 25} ];
 
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "历史归档订单");
@@ -1584,7 +1707,7 @@
                             </div>
                             <div class="bg-slate-50/50 md:bg-slate-50 p-5 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem]">
                                 <div class="space-y-2 md:space-y-3">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">锁屏状态: ${passwordHash === "" ? '<span class="text-rose-500">无密码</span>' : '<span class="text-emerald-500">已加密</span>'}</label>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">锁屏状态: ${passwordHash === "" ? '<span class="text-rose-500">无密码</span>' : '<span class="text-emerald-500">去重置/覆盖</span>'}</label>
                                     <input id="set-pwd" type="text" placeholder="留空取消密码，填入新密码覆盖" class="w-full bg-white px-5 py-4 md:px-8 md:py-5 rounded-2xl md:rounded-3xl border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm md:text-base">
                                 </div>
                             </div>
@@ -1892,37 +2015,159 @@
             }
             
             showToast("📊 正在生成全局多维数据报表...");
-            
             const wb = XLSX.utils.book_new();
 
-            const orderData = orders.map(o => ({
-                "系统单号": o.id, "订单日期": o.date, "接待员工": o.staff, "对账人员": o.auditor || '-',
-                "品牌": o.brand || '默认厂牌', "鞋款型号": o.shoe, "颜色规格": o.color || '-', "尺码": o.size || '-', "购买数量": o.quantity || 1, "客户信息": o.client || '-',
-                "单双成交价(元)": o.price, "单双成本(元)": o.cost, 
-                "总营收(元)": Number(o.price) * Number(o.quantity || 1), 
-                "总毛利(元)": (Number(o.price) - Number(o.cost)) * Number(o.quantity || 1),
-                "订单状态": o.status || '正常', "快递单号": o.tracking || '-', "备注说明": o.remark || '-'
-            }));
+            // 1. 全盘订单明细 (增加自动财务汇总行)
+            let totalQty = 0, totalRev = 0, totalCost = 0, totalProfit = 0;
+            const orderData = orders.map(o => {
+                const qty = Number(o.quantity || 1);
+                const price = Number(o.price || 0);
+                const cost = Number(o.cost || 0);
+                const totalR = price * qty;
+                const totalC = cost * qty;
+                const prof = (price - cost) * qty;
+
+                // 退货单不计入总计
+                if (o.status !== '已退货') {
+                    totalQty += qty;
+                    totalRev += totalR;
+                    totalCost += totalC;
+                    totalProfit += prof;
+                }
+
+                return {
+                    "系统单号": o.id, 
+                    "订单日期": o.date, 
+                    "状态": o.status || '正常',
+                    "厂牌": o.brand || '默认厂牌', 
+                    "鞋款型号": o.shoe, 
+                    "颜色规格": o.color || '-', 
+                    "尺码": o.size || '-', 
+                    "数量(双)": qty, 
+                    "总营收(¥)": totalR, 
+                    "总成本(¥)": totalC,
+                    "总毛利(¥)": prof,
+                    "单双售价(¥)": price, 
+                    "单双成本(¥)": cost, 
+                    "客户信息": o.client || '-',
+                    "接待/对账": `${o.staff} / ${o.auditor || '-'}`,
+                    "快递单号": o.tracking || '-', 
+                    "备注说明": o.remark || '-'
+                };
+            });
+
+            // 底部增加汇总行
+            if (orderData.length > 0) {
+                orderData.push({}); // 增加一个空行作为分隔
+                orderData.push({
+                    "系统单号": "【本期有效总计】",
+                    "状态": "(不含已退货订单)",
+                    "数量(双)": totalQty,
+                    "总营收(¥)": totalRev,
+                    "总成本(¥)": totalCost,
+                    "总毛利(¥)": totalProfit
+                });
+            }
+
             const wsOrders = XLSX.utils.json_to_sheet(orderData.length > 0 ? orderData : [{"提示": "暂无订单数据"}]);
-            wsOrders['!cols'] = [ {wch: 12}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 15}, {wch: 22}, {wch: 10}, {wch: 10}, {wch: 10}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 12}, {wch: 20}, {wch: 25} ];
+            // 优化列宽，让表格打开就非常清晰美观
+            wsOrders['!cols'] = [ 
+                {wch: 14}, {wch: 12}, {wch: 12}, {wch: 15}, {wch: 22}, 
+                {wch: 12}, {wch: 10}, {wch: 10}, {wch: 12}, {wch: 12}, 
+                {wch: 12}, {wch: 12}, {wch: 12}, {wch: 18}, {wch: 16}, 
+                {wch: 20}, {wch: 25} 
+            ];
             XLSX.utils.book_append_sheet(wb, wsOrders, "全盘订单明细");
 
+            // 2. 库存商品台账
             const invData = inventoryList.map(i => ({
-                "所属厂牌": i.brand || '默认厂牌', "鞋款型号": i.name, "当前样鞋库存(双)": i.stock || 0, "默认进价(元)": i.cost || 0, "默认售价(元)": i.price || 0
+                "所属厂牌": i.brand || '默认厂牌', 
+                "鞋款型号": i.name, 
+                "当前样鞋库存(双)": i.stock || 0, 
+                "默认进价(¥)": i.cost || 0, 
+                "默认售价(¥)": i.price || 0
             }));
             const wsInv = XLSX.utils.json_to_sheet(invData.length > 0 ? invData : [{"提示": "暂无库存数据"}]);
             wsInv['!cols'] = [ {wch: 15}, {wch: 25}, {wch: 18}, {wch: 15}, {wch: 15} ];
             XLSX.utils.book_append_sheet(wb, wsInv, "库存商品台账");
 
+            // 3. 售后追踪记录
             const asData = aftersalesList.map(a => ({
-                "登记日期": a.date, "完结日期": a.finishDate || '-', "关联订单号": a.orderId, "对接厂商": a.manufacturer,
-                "售后类型": a.type, "当前状态": a.status, "跟进备注": a.remark || '-'
+                "登记日期": a.date, 
+                "完结日期": a.finishDate || '-', 
+                "关联订单号": a.orderId, 
+                "对接厂商": a.manufacturer,
+                "售后类型": a.type, 
+                "当前状态": a.status, 
+                "跟进备注": a.remark || '-'
             }));
             const wsAs = XLSX.utils.json_to_sheet(asData.length > 0 ? asData : [{"提示": "暂无售后数据"}]);
-            wsAs['!cols'] = [ {wch: 12}, {wch: 12}, {wch: 15}, {wch: 20}, {wch: 12}, {wch: 12}, {wch: 30} ];
+            wsAs['!cols'] = [ {wch: 15}, {wch: 15}, {wch: 16}, {wch: 20}, {wch: 15}, {wch: 15}, {wch: 35} ];
             XLSX.utils.book_append_sheet(wb, wsAs, "售后追踪记录");
 
-            XLSX.writeFile(wb, `${sysTitle}_全局数据报表_${getLocalDateStr()}.xlsx`);
+            XLSX.writeFile(wb, `${sysTitle}_全局财务报表_${getLocalDateStr()}.xlsx`);
+        }
+
+        function archiveOldOrders() {
+            const days = parseInt(document.getElementById('archive-days').value, 10);
+            showConfirm("历史数据归档与瘦身", `确定要将 ${days} 天前的所有历史订单导出为 Excel，并从系统中彻底清除吗？\n\n此操作能极大提升系统加载速度！`, () => {
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - days);
+                const cutoffStr = getLocalDateStr(cutoffDate);
+
+                const oldOrders = orders.filter(o => o.date < cutoffStr);
+                const newHotOrders = orders.filter(o => o.date >= cutoffStr);
+
+                if (oldOrders.length === 0) {
+                    showToast(`⚠️ 系统中没有 ${days} 天前的旧订单，无需归档。`);
+                    return;
+                }
+
+                // 归档表格同样应用新的排版引擎
+                let totalQty = 0, totalRev = 0, totalCost = 0, totalProfit = 0;
+                const exportData = oldOrders.map(o => {
+                    const qty = Number(o.quantity || 1);
+                    const price = Number(o.price || 0);
+                    const cost = Number(o.cost || 0);
+                    const totalR = price * qty;
+                    const totalC = cost * qty;
+                    const prof = (price - cost) * qty;
+
+                    if (o.status !== '已退货') {
+                        totalQty += qty; totalRev += totalR; totalCost += totalC; totalProfit += prof;
+                    }
+
+                    return {
+                        "系统单号": o.id, "订单日期": o.date, "状态": o.status || '正常',
+                        "厂牌": o.brand || '默认厂牌', "鞋款型号": o.shoe, "颜色规格": o.color || '-', 
+                        "尺码": o.size || '-', "数量(双)": qty, 
+                        "总营收(¥)": totalR, "总成本(¥)": totalC, "总毛利(¥)": prof,
+                        "单双售价(¥)": price, "单双成本(¥)": cost, 
+                        "客户信息": o.client || '-', "接待/对账": `${o.staff} / ${o.auditor || '-'}`,
+                        "快递单号": o.tracking || '-', "备注说明": o.remark || '-'
+                    };
+                });
+
+                exportData.push({});
+                exportData.push({
+                    "系统单号": "【归档有效总计】", "状态": "(不含已退货)", "数量(双)": totalQty,
+                    "总营收(¥)": totalRev, "总成本(¥)": totalCost, "总毛利(¥)": totalProfit
+                });
+
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                ws['!cols'] = [ {wch: 14}, {wch: 12}, {wch: 12}, {wch: 15}, {wch: 22}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 18}, {wch: 16}, {wch: 20}, {wch: 25} ];
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "历史归档订单");
+                XLSX.writeFile(wb, `${sysTitle}_${days}天前历史归档_${getLocalDateStr()}.xlsx`);
+
+                orders = newHotOrders;
+                localStorage.setItem('sec_orders', JSON.stringify(orders));
+                render();
+                pushToCloud();
+
+                showToast(`✅ 成功归档并清理了 ${oldOrders.length} 笔历史订单，系统已提速！`);
+            });
         }
 
         function doExportBackup() {
